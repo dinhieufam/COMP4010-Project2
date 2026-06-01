@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project data/cache artifacts
+data/raw/*.jsonl
+data/interim/*.parquet
+data/interim/*_http_cache*
+data/http_cache*
+reports/*.csv
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!reports/.gitkeep
+!reports/coverage.csv

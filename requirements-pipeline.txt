@@ -1,0 +1,11 @@
+requests
+beautifulsoup4
+pandas
+pyarrow
+scikit-learn
+statsmodels
+networkx
+plotly
+pytest
+requests-cache
+tqdm

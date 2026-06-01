@@ -1,0 +1,100 @@
+{
+  "fallback": {
+    "id": 15,
+    "label": "General / Other ML",
+    "keywords": ["machine learning", "learning", "model", "data", "algorithm", "prediction"],
+    "seed_phrases": ["machine learning", "statistical learning"]
+  },
+  "topics": [
+    {
+      "id": 0,
+      "label": "Foundations & Theory",
+      "keywords": ["theory", "theorem", "bound", "bounds", "generalization", "sample complexity", "complexity", "PAC", "VC", "information theory", "information theoretic", "identifiability", "causal", "causality", "proof", "statistical", "estimation", "minimax", "risk"],
+      "seed_phrases": ["generalization bounds", "sample complexity", "statistical learning theory", "information theoretic", "causal inference"]
+    },
+    {
+      "id": 1,
+      "label": "Optimization & Learning Algorithms",
+      "keywords": ["optimization", "gradient", "stochastic", "convex", "nonconvex", "convergence", "descent", "optimizer", "adam", "sgd", "variance reduction", "online learning", "bandit", "regret", "submodular", "coordinate", "dual", "primal", "regularization"],
+      "seed_phrases": ["stochastic gradient", "convex optimization", "online learning", "regret minimization", "gradient descent", "adaptive optimization"]
+    },
+    {
+      "id": 2,
+      "label": "Deep Learning Architectures",
+      "keywords": ["deep learning", "neural network", "neural networks", "network", "networks", "architecture", "transformer", "attention", "representation", "embedding", "layer", "normalization", "activation", "convolutional", "recurrent", "self supervised", "pretraining"],
+      "seed_phrases": ["deep neural networks", "neural network architecture", "representation learning", "self-supervised learning", "attention mechanism"]
+    },
+    {
+      "id": 3,
+      "label": "Computer Vision & Multimodal Learning",
+      "keywords": ["vision", "image", "images", "video", "videos", "visual", "object", "scene", "segmentation", "detection", "recognition", "multimodal", "vision language", "3d", "reconstruction", "pose", "camera", "frame", "frames", "motion"],
+      "seed_phrases": ["computer vision", "image classification", "object detection", "semantic segmentation", "vision-language", "3d reconstruction", "video understanding"]
+    },
+    {
+      "id": 4,
+      "label": "Natural Language Processing & LLMs",
+      "keywords": ["language", "text", "nlp", "llm", "llms", "large language model", "translation", "question answering", "reasoning", "token", "tokens", "prompt", "instruction", "dialogue", "retrieval", "semantic parsing", "bert", "transformer"],
+      "seed_phrases": ["natural language processing", "large language models", "language model", "machine translation", "question answering", "in-context learning"]
+    },
+    {
+      "id": 5,
+      "label": "Reinforcement Learning & Decision Making",
+      "keywords": ["reinforcement learning", "rl", "policy", "agent", "agents", "reward", "mdp", "markov decision", "q-learning", "actor critic", "control", "planning", "exploration", "offline rl", "imitation", "trajectory", "decision making", "multi-agent"],
+      "seed_phrases": ["reinforcement learning", "markov decision process", "policy gradient", "offline reinforcement learning", "multi-agent reinforcement learning"]
+    },
+    {
+      "id": 6,
+      "label": "Probabilistic Modeling & Bayesian Inference",
+      "keywords": ["bayesian", "probabilistic", "inference", "posterior", "prior", "variational", "mcmc", "monte carlo", "graphical model", "latent variable", "gaussian process", "density", "uncertainty", "sampling", "belief", "markov chain"],
+      "seed_phrases": ["bayesian inference", "probabilistic model", "variational inference", "graphical models", "gaussian processes", "monte carlo"]
+    },
+    {
+      "id": 7,
+      "label": "Graph Learning & Network Science",
+      "keywords": ["graph", "graphs", "gnn", "gnns", "node", "edge", "edges", "network science", "message passing", "graph neural", "molecular graph", "knowledge graph", "relational", "link prediction", "graphical"],
+      "seed_phrases": ["graph neural networks", "message passing", "knowledge graph", "node classification", "link prediction"]
+    },
+    {
+      "id": 8,
+      "label": "Generative Models",
+      "keywords": ["generative", "generation", "diffusion", "gan", "gans", "vae", "variational autoencoder", "flow", "normalizing flow", "score matching", "denoising", "decoder", "synthesis", "autoregressive", "latent diffusion"],
+      "seed_phrases": ["generative models", "diffusion models", "generative adversarial", "normalizing flows", "variational autoencoder", "score-based"]
+    },
+    {
+      "id": 9,
+      "label": "Robustness, Safety & Alignment",
+      "keywords": ["robust", "robustness", "adversarial", "attack", "attacks", "defense", "safety", "alignment", "jailbreak", "reliable", "uncertainty", "calibration", "out-of-distribution", "ood", "distribution shift", "verification", "certified"],
+      "seed_phrases": ["adversarial robustness", "distribution shift", "out-of-distribution", "model safety", "AI alignment", "certified robustness"]
+    },
+    {
+      "id": 10,
+      "label": "Fairness, Privacy & Security",
+      "keywords": ["fairness", "fair", "bias", "privacy", "private", "differential privacy", "federated", "security", "secure", "confidential", "audit", "accountability", "ethics", "membership inference", "data protection"],
+      "seed_phrases": ["differential privacy", "federated learning", "algorithmic fairness", "privacy preserving", "membership inference"]
+    },
+    {
+      "id": 11,
+      "label": "Neuroscience & Cognitive Science",
+      "keywords": ["neuroscience", "neural coding", "brain", "spike", "spiking", "neuron", "neurons", "cognitive", "perception", "biological", "synaptic", "visual cortex", "memory", "attention", "psychophysics", "behavior"],
+      "seed_phrases": ["computational neuroscience", "neural coding", "spiking neural", "visual cortex", "cognitive science"]
+    },
+    {
+      "id": 12,
+      "label": "Robotics & Control",
+      "keywords": ["robot", "robotics", "control", "controller", "dynamics", "trajectory", "manipulation", "navigation", "locomotion", "planning", "model predictive", "policy", "sim-to-real", "imitation", "actuation"],
+      "seed_phrases": ["robot learning", "model predictive control", "motion planning", "robot manipulation", "sim-to-real"]
+    },
+    {
+      "id": 13,
+      "label": "Data, Evaluation & Benchmarks",
+      "keywords": ["dataset", "datasets", "benchmark", "benchmarks", "evaluation", "metric", "metrics", "label", "labels", "annotation", "data quality", "active learning", "few-shot", "zero-shot", "transfer", "domain adaptation", "classification"],
+      "seed_phrases": ["benchmark dataset", "model evaluation", "domain adaptation", "active learning", "few-shot learning", "zero-shot learning"]
+    },
+    {
+      "id": 14,
+      "label": "Applications & Scientific ML",
+      "keywords": ["science", "scientific", "biology", "protein", "molecule", "molecular", "drug", "chemistry", "physics", "climate", "health", "medical", "medicine", "genomics", "bioinformatics", "recommendation", "finance", "time series", "forecasting"],
+      "seed_phrases": ["scientific machine learning", "protein structure", "drug discovery", "climate modeling", "medical imaging", "time series forecasting"]
+    }
+  ]
+}
