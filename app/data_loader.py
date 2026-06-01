@@ -19,7 +19,6 @@ REQUIRED_FILES = {
     "topic_year": "topic_year.parquet",
     "country_year": "country_year.parquet",
     "institution_year": "institution_year.parquet",
-    "citation_impact": "citation_impact.parquet",
     "topic_edges": "topic_edges.parquet",
     "forecast": "forecast.parquet",
     "coverage": "coverage.parquet",
@@ -35,4 +34,3 @@ def ensure_processed_data() -> None:
 def load_data() -> dict[str, pd.DataFrame]:
     ensure_processed_data()
     return {name: pd.read_parquet(PROCESSED_DIR / file_name) for name, file_name in REQUIRED_FILES.items()}
-

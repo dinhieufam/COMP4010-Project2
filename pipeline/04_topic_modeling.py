@@ -10,7 +10,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -27,6 +30,9 @@ SECONDARY_THRESHOLD = 3.0
 SECONDARY_RATIO = 0.55
 REVIEW_SCORE_THRESHOLD = 5.0
 REVIEW_MARGIN_THRESHOLD = 1.5
+VECTOR_PRIMARY_THRESHOLD = 0.28
+VECTOR_REVIEW_PROBABILITY = 0.34
+VECTOR_REVIEW_MARGIN = 0.045
 
 
 def parse_args() -> argparse.Namespace:
@@ -96,46 +102,100 @@ def topic_keywords(topic: dict[str, Any]) -> str:
     return ", ".join(str(value) for value in topic.get("keywords", [])[:8])
 
 
+def paper_topic_text(title: str, abstract: str) -> str:
+    return f"{title} {title} {abstract}".strip()
+
+
+def topic_prototype_text(topic: dict[str, Any]) -> str:
+    label = str(topic.get("label", ""))
+    seed_phrases = " ".join(str(value) for value in topic.get("seed_phrases", []))
+    keywords = " ".join(str(value) for value in topic.get("keywords", []))
+    return f"{label}. {label}. {seed_phrases}. {seed_phrases}. {keywords}".strip()
+
+
+def softmax(values: np.ndarray, temperature: float = 0.18) -> np.ndarray:
+    if values.size == 0:
+        return values
+    scaled = values / temperature
+    scaled = scaled - np.max(scaled)
+    exp_values = np.exp(scaled)
+    return exp_values / max(float(exp_values.sum()), 1e-12)
+
+
+def build_vector_scores(papers: pd.DataFrame, topics: list[dict[str, Any]]) -> np.ndarray:
+    paper_texts = [
+        normalize_text(paper_topic_text(str(row.get("title") or ""), str(row.get("abstract") or "")))
+        for row in papers.to_dict("records")
+    ]
+    prototype_texts = [normalize_text(topic_prototype_text(topic)) for topic in topics]
+    vectorizer = TfidfVectorizer(
+        stop_words="english",
+        ngram_range=(1, 2),
+        min_df=2,
+        max_df=0.92,
+        sublinear_tf=True,
+    )
+    matrix = vectorizer.fit_transform([*paper_texts, *prototype_texts])
+    paper_matrix = matrix[: len(paper_texts)]
+    prototype_matrix = matrix[len(paper_texts) :]
+    return cosine_similarity(paper_matrix, prototype_matrix)
+
+
 def assign_topic(
     title: str,
     abstract: str,
     topics: list[dict[str, Any]],
     fallback: dict[str, Any],
+    vector_scores: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    text = f"{title} {title} {abstract}"
+    text = paper_topic_text(title, abstract)
     token_counts = tokens_for(text)
     scored = [
-        {**topic, "score": score_topic(text, token_counts, topic)}
-        for topic in topics
+        {
+            **topic,
+            "keyword_score": score_topic(text, token_counts, topic),
+            "vector_score": float(vector_scores[index]) if vector_scores is not None else 0.0,
+        }
+        for index, topic in enumerate(topics)
     ]
-    scored.sort(key=lambda topic: (float(topic["score"]), -int(topic["id"])), reverse=True)
+    max_keyword = max([float(topic["keyword_score"]) for topic in scored] + [1.0])
+    max_vector = max([float(topic["vector_score"]) for topic in scored] + [1e-9])
+    for topic in scored:
+        keyword_component = min(float(topic["keyword_score"]) / max(max_keyword, 8.0), 1.0)
+        vector_component = float(topic["vector_score"]) / max_vector if max_vector > 0 else 0.0
+        topic["score"] = round((0.62 * vector_component) + (0.38 * keyword_component), 6)
+    scored.sort(key=lambda topic: (float(topic["score"]), float(topic["keyword_score"]), -int(topic["id"])), reverse=True)
     best = scored[0]
-    second = scored[1] if len(scored) > 1 else {**fallback, "score": 0.0}
+    second = scored[1] if len(scored) > 1 else {**fallback, "score": 0.0, "keyword_score": 0.0}
+    probabilities = softmax(np.array([float(topic["score"]) for topic in scored]))
+    best_probability = float(probabilities[0]) if probabilities.size else 0.0
+    second_probability = float(probabilities[1]) if probabilities.size > 1 else 0.0
 
-    if float(best["score"]) < PRIMARY_THRESHOLD:
+    if float(best["score"]) < VECTOR_PRIMARY_THRESHOLD and float(best["keyword_score"]) < PRIMARY_THRESHOLD:
         best = {**fallback, "score": 0.0}
         secondary = []
+        best_probability = 0.0
+        second_probability = 0.0
     else:
         secondary = [
             topic
             for topic in scored[1:]
-            if float(topic["score"]) >= SECONDARY_THRESHOLD
-            and float(topic["score"]) >= float(best["score"]) * SECONDARY_RATIO
+            if float(topic["score"]) >= VECTOR_PRIMARY_THRESHOLD
+            and float(topic["score"]) >= float(best["score"]) * 0.82
         ][:3]
 
     best_score = float(best["score"])
     second_score = float(second["score"])
-    probability = best_score / (best_score + second_score + 1.0) if best_score > 0 else 0.0
     review_flag = (
         str(best["label"]) == str(fallback["label"])
-        or best_score < REVIEW_SCORE_THRESHOLD
-        or best_score - second_score < REVIEW_MARGIN_THRESHOLD
+        or best_probability < VECTOR_REVIEW_PROBABILITY
+        or best_probability - second_probability < VECTOR_REVIEW_MARGIN
     )
 
     return {
         "topic_id": int(best["id"]),
         "topic_label": str(best["label"]),
-        "topic_probability": round(probability, 3),
+        "topic_probability": round(best_probability, 3),
         "topic_keywords": topic_keywords(best),
         "secondary_topic_ids": [int(topic["id"]) for topic in secondary],
         "secondary_topic_labels": [str(topic["label"]) for topic in secondary],
@@ -246,14 +306,16 @@ def main() -> None:
     topics, fallback = load_taxonomy(args.taxonomy)
     label_lookup = {canonical_label(topic["label"]): topic for topic in [*topics, fallback]}
     overrides = load_overrides(Path(args.overrides), label_lookup)
+    vector_score_matrix = build_vector_scores(papers, topics)
 
     assignments = []
-    for row in papers.to_dict("records"):
+    for index, row in enumerate(papers.to_dict("records")):
         assignment = assign_topic(
             str(row.get("title") or ""),
             str(row.get("abstract") or ""),
             topics,
             fallback,
+            vector_score_matrix[index],
         )
         override = overrides.get(str(row.get("paper_id")))
         if override:

@@ -23,6 +23,16 @@ def join_text(values: object) -> str:
     return str(values)
 
 
+def has_known(values: object) -> bool:
+    if hasattr(values, "tolist"):
+        values = values.tolist()
+    if isinstance(values, (list, tuple, set)):
+        return any(str(value).strip() and str(value).strip() != "Unknown" for value in values)
+    if values is None or (isinstance(values, float) and pd.isna(values)):
+        return False
+    return str(values).strip() != "Unknown"
+
+
 def count_raw_records() -> pd.DataFrame:
     rows = []
     for path in sorted(RAW_DIR.glob("*.jsonl")):
@@ -47,22 +57,28 @@ def main() -> None:
     papers["authors_text"] = papers["authors"].apply(join_text)
     papers["countries_text"] = papers["countries"].apply(join_text)
     papers["institutions_text"] = papers["institutions"].apply(join_text)
+    if "countries_iso2" not in papers.columns:
+        papers["countries_iso2"] = papers["countries"]
+    if "institution_rors" not in papers.columns:
+        papers["institution_rors"] = [["Unknown"] for _ in range(len(papers))]
+    if "affiliation_source" not in papers.columns:
+        papers["affiliation_source"] = "none"
+    if "affiliation_confidence" not in papers.columns:
+        papers["affiliation_confidence"] = 0.0
+    papers["countries_iso2_text"] = papers["countries_iso2"].apply(join_text)
+    papers["institution_rors_text"] = papers["institution_rors"].apply(join_text)
+    papers["affiliation_source"] = papers["affiliation_source"].fillna("none").astype(str)
+    papers["affiliation_confidence"] = pd.to_numeric(papers["affiliation_confidence"], errors="coerce").fillna(0.0)
+    papers["country_known"] = papers["countries"].apply(has_known)
+    papers["institution_known"] = papers["institutions"].apply(has_known)
     papers["secondary_topic_labels_text"] = papers.get("secondary_topic_labels", pd.Series([[]] * len(papers))).apply(join_text)
-    papers["citation_count"] = pd.to_numeric(papers["citation_count"], errors="coerce").fillna(0).clip(lower=0)
     for column, default in (
-        ("doi", None),
-        ("doi_source", "none"),
-        ("citation_source", "none"),
         ("topic_score", 0.0),
         ("secondary_topic_score", 0.0),
         ("topic_review_flag", False),
     ):
         if column not in papers.columns:
             papers[column] = default
-    latest_year = max(int(papers["year"].max()), 2026)
-    papers["citation_per_year"] = papers.apply(
-        lambda row: row["citation_count"] / max(1, latest_year - int(row["year"]) + 1), axis=1
-    )
 
     app_papers = papers[
         [
@@ -77,12 +93,14 @@ def main() -> None:
             "topic_score",
             "secondary_topic_score",
             "topic_review_flag",
-            "citation_count",
-            "citation_source",
-            "doi",
-            "doi_source",
             "countries_text",
+            "countries_iso2_text",
             "institutions_text",
+            "institution_rors_text",
+            "affiliation_source",
+            "affiliation_confidence",
+            "country_known",
+            "institution_known",
             "url",
             "pdf_url",
             "openalex_match_method",
@@ -92,28 +110,20 @@ def main() -> None:
 
     topic_year = (
         papers.groupby(["venue", "year", "topic_id", "topic_label"], as_index=False)
-        .agg(paper_count=("paper_id", "count"), avg_citations=("citation_count", "mean"))
+        .agg(paper_count=("paper_id", "count"))
         .sort_values(["year", "topic_label"])
     )
     country_year = (
         papers.explode("countries")
         .rename(columns={"countries": "country"})
         .groupby(["venue", "year", "country"], as_index=False)
-        .agg(paper_count=("paper_id", "count"), citation_count=("citation_count", "sum"))
+        .agg(paper_count=("paper_id", "count"))
     )
     institution_year = (
         papers.explode("institutions")
         .rename(columns={"institutions": "institution"})
         .groupby(["venue", "year", "institution"], as_index=False)
-        .agg(paper_count=("paper_id", "count"), citation_count=("citation_count", "sum"))
-    )
-    citation_impact = (
-        papers.groupby(["venue", "year", "topic_id", "topic_label"], as_index=False)
-        .agg(
-            paper_count=("paper_id", "count"),
-            avg_citations=("citation_count", "mean"),
-            normalized_impact=("citation_per_year", "mean"),
-        )
+        .agg(paper_count=("paper_id", "count"))
     )
 
     edge_path = INTERIM_DIR / "topic_edges.parquet"
@@ -127,8 +137,9 @@ def main() -> None:
         .agg(
             abstract_coverage=("has_abstract", "mean"),
             openalex_match_rate=("openalex_match_score", lambda s: float((pd.to_numeric(s, errors="coerce").fillna(0) > 0).mean())),
-            doi_coverage=("doi", lambda s: float(s.notna().mean())),
-            citation_coverage=("citation_count", lambda s: float(pd.to_numeric(s, errors="coerce").fillna(0).gt(0).mean())),
+            institution_coverage=("institution_known", "mean"),
+            country_coverage=("country_known", "mean"),
+            affiliation_confidence=("affiliation_confidence", "mean"),
             index_count=("paper_id", "count"),
             external_count=("paper_id", "count"),
         )
@@ -149,20 +160,26 @@ def main() -> None:
             "count_status",
             "abstract_coverage",
             "openalex_match_rate",
-            "doi_coverage",
-            "citation_coverage",
+            "institution_coverage",
+            "country_coverage",
+            "affiliation_confidence",
         ]
     ]
+
+    source_breakdown = (
+        papers.groupby(["venue", "year", "affiliation_source"], as_index=False)
+        .agg(paper_count=("paper_id", "count"))
+    )
 
     outputs = {
         "papers": app_papers,
         "topic_year": topic_year,
         "country_year": country_year,
         "institution_year": institution_year,
-        "citation_impact": citation_impact,
         "topic_edges": topic_edges,
         "forecast": forecast,
         "coverage": coverage,
+        "affiliation_source_year": source_breakdown,
     }
     for name, frame in outputs.items():
         write_parquet(frame, PROCESSED_DIR / f"{name}.parquet")

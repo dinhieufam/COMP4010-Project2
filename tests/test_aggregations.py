@@ -16,4 +16,5 @@ def test_coverage_counts_reconcile_with_papers():
     assert int(coverage["scraped_count"].sum()) == len(frames["papers"])
     assert coverage["abstract_coverage"].between(0, 1).all()
     assert coverage["openalex_match_rate"].between(0, 1).all()
-
+    assert coverage["institution_coverage"].between(0, 1).all()
+    assert coverage["country_coverage"].between(0, 1).all()

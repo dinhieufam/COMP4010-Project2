@@ -1,6 +1,6 @@
 # AI Conference Research Observatory
 
-Local Tier 1 MVP for COMP4010 Project 2. The app explores accepted NeurIPS papers across years, topics, institutions, countries, and citation impact.
+Local Tier 1 MVP for COMP4010 Project 2. The app explores accepted NeurIPS papers across years, topics, institutions, countries, and metadata coverage.
 
 This repository intentionally excludes shinyapps.io deployment, the report, and slides for the local MVP pass.
 
@@ -31,7 +31,7 @@ Run from the repository root:
 ```bash
 python pipeline/01_scrape.py --venue neurips
 python pipeline/02_enrich_openalex.py
-python pipeline/02b_enrich_doi_citations.py
+python pipeline/02d_enrich_openreview.py --years 2023 2024 2025
 python pipeline/03_clean_normalize.py
 python pipeline/04_topic_modeling.py
 python pipeline/05_network_and_embedding.py
@@ -45,19 +45,26 @@ For a network-light development pass after scraping, use:
 python pipeline/02_enrich_openalex.py --offline
 ```
 
-`02b_enrich_doi_citations.py` is intentionally conservative. NeurIPS proceedings pages
-usually do not expose DOI metadata, and broad Crossref title search can return false
-matches. By default the step normalizes any DOI already found and uses DOI-based
-Crossref lookups for extra citation counts. Optional title-search probes are available:
+Scholarly citation-count metrics are intentionally excluded from the app-ready dataset because coverage is too sparse for reliable comparison.
+
+OpenAlex bulk enrichment is the default institution/country source. The OpenAlex
+stage first tries exact NeurIPS URL-hash matching, then falls back to title/year
+matching. Recent-year OpenReview affiliation recovery is available through
+`pipeline/02d_enrich_openreview.py`; it caches notes and profiles under
+`data/interim/openreview_*.json` so interrupted runs are resumable. If profile
+fetching is slow, use `--limit-profiles` and rerun later.
+
+To experiment with PDF-header affiliation recovery for OpenAlex-unmatched papers,
+install `pdftotext` (Poppler) and run a bounded pass before normalization:
 
 ```bash
-python pipeline/02b_enrich_doi_citations.py --crossref-title-limit 100
-SEMANTIC_SCHOLAR_API_KEY=... python pipeline/02b_enrich_doi_citations.py --semantic-scholar-limit 1000
+python pipeline/02c_affiliations_pdf.py --limit 500
 ```
 
 Topics use a curated NeurIPS taxonomy in `pipeline/topic_taxonomy.json`. The topic
-step writes `reports/topic_audit.csv` and supports manual paper-level corrections in
-`data/manual/topic_overrides.csv` with these columns:
+step now blends TF-IDF cosine similarity to fixed topic prototypes with the curated
+keyword/seed-phrase scores. It writes `reports/topic_audit.csv` and supports manual
+paper-level corrections in `data/manual/topic_overrides.csv` with these columns:
 
 ```csv
 paper_id,title,primary_topic,secondary_topics,notes
@@ -83,9 +90,9 @@ The Shiny app reads only compact app-ready files:
 - `data/processed/topic_year.parquet`
 - `data/processed/country_year.parquet`
 - `data/processed/institution_year.parquet`
-- `data/processed/citation_impact.parquet`
 - `data/processed/topic_edges.parquet`
 - `data/processed/forecast.parquet`
 - `data/processed/coverage.parquet`
+- `data/processed/affiliation_source_year.parquet`
 
 The pipeline also writes `reports/coverage.csv` for completeness and metadata coverage.

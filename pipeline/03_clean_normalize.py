@@ -41,8 +41,21 @@ def main() -> None:
     df["abstract"] = df["abstract"].fillna("").apply(clean_text)
     df["authors"] = df["authors"].apply(as_list)
     df["institutions"] = df["institutions"].apply(as_list)
+    if "institution_rors" not in df.columns:
+        df["institution_rors"] = [["Unknown"] for _ in range(len(df))]
+    df["institution_rors"] = df["institution_rors"].apply(as_list)
     df["countries"] = df["countries"].apply(as_list)
-    df["citation_count"] = pd.to_numeric(df["citation_count"], errors="coerce").fillna(0).clip(lower=0).astype(int)
+    if "countries_iso2" not in df.columns:
+        df["countries_iso2"] = df["countries"]
+    df["countries_iso2"] = df["countries_iso2"].apply(as_list)
+    if "affiliation_source" not in df.columns:
+        df["affiliation_source"] = "none"
+    if "affiliation_confidence" not in df.columns:
+        df["affiliation_confidence"] = 0.0
+    df["affiliation_source"] = df["affiliation_source"].fillna("none").astype(str)
+    df["affiliation_confidence"] = pd.to_numeric(df["affiliation_confidence"], errors="coerce").fillna(0.0).clip(0.0, 1.0)
+    df["institution_coverage"] = df["institutions"].apply(lambda values: values != ["Unknown"])
+    df["country_coverage"] = df["countries"].apply(lambda values: values != ["Unknown"])
     df["has_abstract"] = df["abstract"].str.len() > 0
     df["metadata_quality_flag"] = df.apply(
         lambda row: "usable" if row["title"] and row["authors"] != ["Unknown"] else "needs_review",

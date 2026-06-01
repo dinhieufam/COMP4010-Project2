@@ -44,11 +44,7 @@ def sample_raw_rows() -> list[dict]:
                 "url": f"https://proceedings.neurips.cc/paper_files/paper/{year}",
                 "pdf_url": None,
                 "doi": None,
-                "doi_source": "none",
-                "doi_match_score": 0.0,
                 "source": "sample",
-                "citation_count": max(0, (2026 - year) * (topic_id + 2)),
-                "citation_source": "sample",
                 "institutions": institutions[idx % len(institutions)],
                 "countries": countries[idx % len(countries)],
                 "concepts": [label, "Machine learning"],
@@ -76,37 +72,28 @@ def processed_frames() -> dict[str, pd.DataFrame]:
     papers["authors_text"] = papers["authors"].apply(lambda values: ", ".join(values))
     papers["countries_text"] = papers["countries"].apply(lambda values: ", ".join(values))
     papers["institutions_text"] = papers["institutions"].apply(lambda values: ", ".join(values))
+    papers["country_known"] = papers["countries_text"].ne("Unknown")
+    papers["institution_known"] = papers["institutions_text"].ne("Unknown")
     papers["secondary_topic_labels_text"] = papers["secondary_topic_labels"].apply(
         lambda values: ", ".join(values) if values else "Unknown"
-    )
-    papers["citation_per_year"] = papers.apply(
-        lambda row: row["citation_count"] / max(1, 2026 - int(row["year"])), axis=1
     )
 
     topic_year = (
         papers.groupby(["venue", "year", "topic_id", "topic_label"], as_index=False)
-        .agg(paper_count=("paper_id", "count"), avg_citations=("citation_count", "mean"))
+        .agg(paper_count=("paper_id", "count"))
         .sort_values(["year", "topic_label"])
     )
     country_year = (
         papers.explode("countries")
         .rename(columns={"countries": "country"})
         .groupby(["venue", "year", "country"], as_index=False)
-        .agg(paper_count=("paper_id", "count"), citation_count=("citation_count", "sum"))
+        .agg(paper_count=("paper_id", "count"))
     )
     institution_year = (
         papers.explode("institutions")
         .rename(columns={"institutions": "institution"})
         .groupby(["venue", "year", "institution"], as_index=False)
-        .agg(paper_count=("paper_id", "count"), citation_count=("citation_count", "sum"))
-    )
-    citation_impact = (
-        papers.groupby(["venue", "year", "topic_id", "topic_label"], as_index=False)
-        .agg(
-            paper_count=("paper_id", "count"),
-            avg_citations=("citation_count", "mean"),
-            normalized_impact=("citation_per_year", "mean"),
-        )
+        .agg(paper_count=("paper_id", "count"))
     )
     topic_summary = topic_year.groupby(["topic_id", "topic_label"], as_index=False)["paper_count"].sum()
     edge_rows = []
@@ -149,8 +136,8 @@ def processed_frames() -> dict[str, pd.DataFrame]:
             external_count=("paper_id", "count"),
             abstract_coverage=("has_abstract", "mean"),
             openalex_match_rate=("openalex_match_score", lambda s: float((s > 0).mean())),
-            doi_coverage=("doi", lambda s: float(s.notna().mean())),
-            citation_coverage=("citation_count", lambda s: float(s.gt(0).mean())),
+            institution_coverage=("institution_known", "mean"),
+            country_coverage=("country_known", "mean"),
         )
         .assign(count_status="sample")
     )
@@ -167,12 +154,10 @@ def processed_frames() -> dict[str, pd.DataFrame]:
             "topic_score",
             "secondary_topic_score",
             "topic_review_flag",
-            "citation_count",
-            "citation_source",
-            "doi",
-            "doi_source",
             "countries_text",
             "institutions_text",
+            "country_known",
+            "institution_known",
             "url",
             "pdf_url",
             "openalex_match_method",
@@ -184,7 +169,6 @@ def processed_frames() -> dict[str, pd.DataFrame]:
         "topic_year": topic_year,
         "country_year": country_year,
         "institution_year": institution_year,
-        "citation_impact": citation_impact,
         "topic_edges": pd.DataFrame(edge_rows),
         "forecast": pd.DataFrame(forecast_rows),
         "coverage": coverage,

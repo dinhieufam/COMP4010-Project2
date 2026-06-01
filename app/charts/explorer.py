@@ -10,12 +10,13 @@ def paper_table(papers: pd.DataFrame) -> pd.DataFrame:
         "authors_text",
         "topic_label",
         "secondary_topic_labels_text",
-        "topic_review_flag",
-        "citation_count",
-        "citation_source",
-        "doi",
         "countries_text",
         "institutions_text",
+        "topic_review_flag",
+        "topic_score",
+        "affiliation_source",
+        "affiliation_confidence",
+        "pdf_url",
         "url",
     ]
     available = [column for column in columns if column in papers.columns]

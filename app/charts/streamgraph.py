@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from .theme import TOPIC_COLORS, apply_research_layout
+from .theme import TOPIC_COLORS, apply_research_layout, empty_figure
 
 
 def focus_topics(papers: pd.DataFrame, max_topics: int = 8) -> pd.DataFrame:
@@ -19,7 +19,7 @@ def focus_topics(papers: pd.DataFrame, max_topics: int = 8) -> pd.DataFrame:
 
 def make_topic_growth(papers: pd.DataFrame, forecast: pd.DataFrame | None = None) -> go.Figure:
     if papers.empty:
-        return apply_research_layout(go.Figure().update_layout(title="Topic growth over time"), height=520)
+        return empty_figure("Topic growth over time", height=520)
     papers = focus_topics(papers)
     data = (
         papers.groupby(["year", "topic_label"], as_index=False)
@@ -35,8 +35,9 @@ def make_topic_growth(papers: pd.DataFrame, forecast: pd.DataFrame | None = None
         labels={"paper_count": "Papers", "topic_label": "Topic"},
         color_discrete_sequence=TOPIC_COLORS,
     )
-    if forecast is not None and not forecast.empty and data["topic_label"].nunique() <= 3:
-        for topic in data["topic_label"].unique()[:6]:
+    if forecast is not None and not forecast.empty:
+        focus = data.groupby("topic_label")["paper_count"].sum().sort_values(ascending=False).head(4).index
+        for topic in focus:
             forecast_topic = forecast[forecast["topic_label"].eq(topic)]
             if not forecast_topic.empty:
                 fig.add_trace(
@@ -45,8 +46,9 @@ def make_topic_growth(papers: pd.DataFrame, forecast: pd.DataFrame | None = None
                         y=forecast_topic["forecast_count"],
                         mode="lines",
                         name=f"{topic} forecast",
-                        line={"dash": "dot", "width": 2, "color": "#8f174f"},
+                        line={"dash": "dot", "width": 1.8, "color": "#7d5a66"},
                         showlegend=False,
+                        hovertemplate="%{x}<br>%{y:.0f} forecast papers<extra></extra>",
                     )
                 )
     fig.update_traces(line={"width": 0.6})

@@ -220,6 +220,9 @@ __marimo__/
 # Project data/cache artifacts
 data/raw/*.jsonl
 data/interim/*.parquet
+data/interim/*.json
+data/interim/pdf_cache/
+data/interim/pdf_text_cache/
 data/interim/*_http_cache*
 data/http_cache*
 reports/*.csv
