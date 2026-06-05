@@ -23,6 +23,17 @@ def join_text(values: object) -> str:
     return str(values)
 
 
+def join_institutions(values: object) -> str:
+    """Join institution names with '|' to avoid ambiguity with comma-in-name institutions."""
+    if hasattr(values, "tolist"):
+        values = values.tolist()
+    if isinstance(values, (list, tuple, set)):
+        return " | ".join(str(v) for v in values if str(v).strip()) or "Unknown"
+    if values is None or (isinstance(values, float) and pd.isna(values)):
+        return "Unknown"
+    return str(values)
+
+
 def has_known(values: object) -> bool:
     if hasattr(values, "tolist"):
         values = values.tolist()
@@ -56,7 +67,7 @@ def main() -> None:
     papers = pd.read_parquet(topics_path)
     papers["authors_text"] = papers["authors"].apply(join_text)
     papers["countries_text"] = papers["countries"].apply(join_text)
-    papers["institutions_text"] = papers["institutions"].apply(join_text)
+    papers["institutions_text"] = papers["institutions"].apply(join_institutions)
     if "countries_iso2" not in papers.columns:
         papers["countries_iso2"] = papers["countries"]
     if "institution_rors" not in papers.columns:

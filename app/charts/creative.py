@@ -12,9 +12,16 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 
-from .theme import PINK_SCALE, TOPIC_COLORS, apply_research_layout, empty_figure
+from .theme import CORAL_SCALE, TOPIC_COLORS, apply_research_layout, empty_figure
 from .utils import country_display, explode_tokens, split_tokens
 
+_CANVAS    = "#faf9f5"
+_INK       = "#141413"
+_MUTED     = "#6c6a64"
+_HAIRLINE  = "#e6dfd8"
+_CORAL     = "#cc785c"
+_CORAL_A   = "rgba(204, 120, 92, 0.22)"
+_NODE_RING = _CANVAS
 
 ERA_LABELS = [
     (1987, 1997, "1987–1997 · foundations"),
@@ -112,13 +119,8 @@ def paper_universe_points(papers: pd.DataFrame, max_points: int = 3500) -> pd.Da
         data = data.sample(max_points, random_state=42)
     text_parts = []
     for column in [
-        "title",
-        "authors_text",
-        "topic_label",
-        "secondary_topic_labels_text",
-        "countries_text",
-        "institutions_text",
-        "affiliation_source",
+        "title", "authors_text", "topic_label", "secondary_topic_labels_text",
+        "countries_text", "institutions_text", "affiliation_source",
     ]:
         if column in data.columns:
             text_parts.append(data[column].fillna("").astype(str))
@@ -157,7 +159,7 @@ def _recent_growth(papers: pd.DataFrame, window: int = 3) -> pd.DataFrame:
         counts["growth_pp"] = 0.0
         return counts
     early_years = years[: min(window, len(years))]
-    recent_years = years[-min(window, len(years)) :]
+    recent_years = years[-min(window, len(years)):]
     early = papers[papers["year"].isin(early_years)]["topic_label"].value_counts(normalize=True)
     recent = papers[papers["year"].isin(recent_years)]["topic_label"].value_counts(normalize=True)
     growth = ((recent - early).fillna(0) * 100).rename("growth_pp").reset_index()
@@ -207,15 +209,13 @@ def make_topic_galaxy(papers: pd.DataFrame) -> go.Figure:
     for source, target, attrs in graph.edges(data=True):
         x0, y0 = pos[source]
         x1, y1 = pos[target]
-        width = 0.5 + 2.8 * math.sqrt(float(attrs.get("weight", 1)) / max(edges["weight"].max() if not edges.empty else 1, 1))
+        w = float(attrs.get("weight", 1))
+        opacity = 0.12 + 0.30 * math.sqrt(w / max(edges["weight"].max() if not edges.empty else 1, 1))
         fig.add_trace(
             go.Scatter(
-                x=[x0, x1],
-                y=[y0, y1],
-                mode="lines",
-                line={"color": "rgba(232, 126, 164, 0.26)", "width": width},
-                hoverinfo="skip",
-                showlegend=False,
+                x=[x0, x1], y=[y0, y1], mode="lines",
+                line={"color": f"rgba(204, 120, 92, {opacity:.2f})", "width": 1.2},
+                hoverinfo="skip", showlegend=False,
             )
         )
     node_x, node_y, labels, sizes, colors = [], [], [], [], []
@@ -228,26 +228,29 @@ def make_topic_galaxy(papers: pd.DataFrame) -> go.Figure:
         labels.append(f"{node}<br>{count:,} papers")
         sizes.append(18 + 48 * math.sqrt(count / max_count))
         colors.append(TOPIC_COLORS[idx % len(TOPIC_COLORS)])
-    fig.add_trace(go.Scatter(x=node_x, y=node_y, mode="markers", marker={"size": [s + 18 for s in sizes], "color": colors, "opacity": 0.18}, hoverinfo="skip", showlegend=False))
-    fig.add_trace(
-        go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode="markers+text",
-            text=list(graph.nodes),
-            hovertext=labels,
-            hoverinfo="text",
-            textposition="top center",
-            marker={"size": sizes, "color": colors, "opacity": 0.92, "line": {"color": "#fff7fb", "width": 1.5}},
-            textfont={"size": 10, "color": "#3a1d2b"},
-            showlegend=False,
-        )
+    fig.add_trace(go.Scatter(
+        x=node_x, y=node_y, mode="markers",
+        marker={"size": [s + 18 for s in sizes], "color": colors, "opacity": 0.14},
+        hoverinfo="skip", showlegend=False,
+    ))
+    fig.add_trace(go.Scatter(
+        x=node_x, y=node_y, mode="markers+text",
+        text=list(graph.nodes), hovertext=labels, hoverinfo="text",
+        textposition="top center",
+        marker={"size": sizes, "color": colors, "opacity": 0.92,
+                "line": {"color": _CANVAS, "width": 1.5}},
+        textfont={"size": 10, "color": _INK},
+        showlegend=False,
+    ))
+    fig.update_layout(
+        title="Topic Galaxy · research constellation",
+        xaxis={"visible": False}, yaxis={"visible": False},
     )
-    fig.update_layout(title="Topic Galaxy · research constellation", xaxis={"visible": False}, yaxis={"visible": False})
     return apply_research_layout(fig, height=540, legend=False)
 
 
 def make_research_river(papers: pd.DataFrame) -> go.Figure:
+    """Sankey from historical eras into dominant research topics."""
     if papers.empty:
         return empty_figure("Research River")
     data = papers.copy()
@@ -261,6 +264,8 @@ def make_research_river(papers: pd.DataFrame) -> go.Figure:
     topics = grouped["topic_focus"].drop_duplicates().tolist()
     labels = eras + topics
     index = {label: idx for idx, label in enumerate(labels)}
+    era_colors = [TOPIC_COLORS[4]] * len(eras)
+    topic_colors = [TOPIC_COLORS[i % len(TOPIC_COLORS)] for i in range(len(topics))]
     fig = go.Figure(
         go.Sankey(
             arrangement="fixed",
@@ -268,14 +273,14 @@ def make_research_river(papers: pd.DataFrame) -> go.Figure:
                 "pad": 14,
                 "thickness": 14,
                 "label": labels,
-                "color": [TOPIC_COLORS[1]] * len(eras) + [TOPIC_COLORS[i % len(TOPIC_COLORS)] for i in range(len(topics))],
-                "line": {"color": "rgba(122, 70, 91, 0.28)", "width": 0.6},
+                "color": era_colors + topic_colors,
+                "line": {"color": "rgba(169, 88, 62, 0.22)", "width": 0.6},
             },
             link={
                 "source": grouped["era"].map(index),
                 "target": grouped["topic_focus"].map(index),
                 "value": grouped["paper_count"],
-                "color": "rgba(217, 79, 131, 0.22)",
+                "color": _CORAL_A,
                 "hovertemplate": "%{source.label} → %{target.label}<br>%{value:,} papers<extra></extra>",
             },
         )
@@ -285,6 +290,7 @@ def make_research_river(papers: pd.DataFrame) -> go.Figure:
 
 
 def make_topic_race(papers: pd.DataFrame) -> go.Figure:
+    """Line chart showing annual topic rank changes."""
     ranks = topic_rank_table(papers)
     if ranks.empty:
         return empty_figure("Topic Race")
@@ -303,8 +309,77 @@ def make_topic_race(papers: pd.DataFrame) -> go.Figure:
                 hovertemplate="%{fullData.name}<br>%{x}<br>Rank #%{y:.0f}<br>%{customdata[0]:,} papers<extra></extra>",
             )
         )
-    fig.update_layout(title="Topic Race · annual rank changes", yaxis={"autorange": "reversed", "dtick": 1}, xaxis_title="Year", yaxis_title="Rank")
+    fig.update_layout(
+        title="Topic Race · annual rank changes",
+        yaxis={"autorange": "reversed", "dtick": 1},
+        xaxis_title="Year",
+        yaxis_title="Rank",
+    )
     return apply_research_layout(fig, height=520)
+
+
+def make_institution_country_treemap(
+    papers: pd.DataFrame,
+    top_countries: int = 8,
+    top_institutions: int = 30,
+) -> go.Figure:
+    """Institution-Country treemap — hierarchical distribution of papers.
+
+    Countries are parent tiles; institutions are child tiles.
+    Tile area = paper participation count, colour = country.
+    Much clearer than orbit edge-thickness encoding.
+    """
+    if papers.empty:
+        return empty_figure("Institution-Country Distribution")
+
+    pairs = (
+        papers[["paper_id", "countries_text", "institutions_text"]]
+        .assign(
+            country=lambda d: d["countries_text"].apply(split_tokens),
+            institution=lambda d: d["institutions_text"].apply(split_tokens),
+        )
+        .explode("country")
+        .explode("institution")
+    )
+    pairs = pairs[
+        pairs["country"].notna() & pairs["institution"].notna()
+        & pairs["country"].ne("") & pairs["institution"].ne("")
+    ]
+    pairs["country"] = pairs["country"].apply(country_display)
+
+    grouped = pairs.groupby(["country", "institution"], as_index=False).agg(papers=("paper_id", "count"))
+    if grouped.empty:
+        return empty_figure("Institution-Country Distribution", "No affiliation metadata in current selection.")
+
+    top_c = (
+        grouped.groupby("country")["papers"].sum()
+        .sort_values(ascending=False).head(top_countries).index
+    )
+    top_i = (
+        grouped.groupby("institution")["papers"].sum()
+        .sort_values(ascending=False).head(top_institutions).index
+    )
+    grouped = grouped[grouped["country"].isin(top_c) & grouped["institution"].isin(top_i)]
+    if grouped.empty:
+        return empty_figure("Institution-Country Distribution")
+
+    fig = px.treemap(
+        grouped,
+        path=["country", "institution"],
+        values="papers",
+        color="country",
+        color_discrete_sequence=TOPIC_COLORS,
+        title="Institution-country distribution · paper affiliations",
+        custom_data=["papers"],
+    )
+    fig.update_traces(
+        hovertemplate="<b>%{label}</b><br>%{customdata[0]:,} papers<extra></extra>",
+        textinfo="label+value",
+        marker={"line": {"color": _CANVAS, "width": 1.5}},
+        insidetextfont={"color": _CANVAS, "size": 11},
+    )
+    fig.update_layout(margin={"t": 52, "l": 10, "r": 10, "b": 10})
+    return apply_research_layout(fig, height=520, legend=False)
 
 
 def make_research_bloom(papers: pd.DataFrame) -> go.Figure:
@@ -322,10 +397,10 @@ def make_research_bloom(papers: pd.DataFrame) -> go.Figure:
             width=[360 / max(len(data), 1) * 0.82] * len(data),
             marker={
                 "color": color_values,
-                "colorscale": PINK_SCALE,
+                "colorscale": CORAL_SCALE,
                 "cmin": -12,
                 "cmax": 12,
-                "line": {"color": "#fff7fb", "width": 1},
+                "line": {"color": _CANVAS, "width": 1},
                 "colorbar": {"title": "Growth pp", "thickness": 12, "len": 0.62},
             },
             text=data["topic_label"],
@@ -336,7 +411,7 @@ def make_research_bloom(papers: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         title="Research Bloom · topic petals by scale and growth",
         polar={
-            "bgcolor": "rgba(255,249,251,0.35)",
+            "bgcolor": f"rgba(250, 249, 245, 0.35)",
             "angularaxis": {"visible": False},
             "radialaxis": {"visible": False},
         },
@@ -344,82 +419,11 @@ def make_research_bloom(papers: pd.DataFrame) -> go.Figure:
     return apply_research_layout(fig, height=520, legend=False)
 
 
-def make_institution_country_orbit(papers: pd.DataFrame, top_countries: int = 5, top_institutions: int = 22) -> go.Figure:
-    if papers.empty:
-        return empty_figure("Institution-Country Orbit")
-    countries = explode_tokens(papers, "countries_text", "country")
-    institutions = explode_tokens(papers, "institutions_text", "institution")
-    if countries.empty or institutions.empty:
-        return empty_figure("Institution-Country Orbit", "No known country/institution metadata in the current selection.")
-    pairs = (
-        papers[["paper_id", "countries_text", "institutions_text"]]
-        .assign(country=lambda d: d["countries_text"].apply(split_tokens), institution=lambda d: d["institutions_text"].apply(split_tokens))
-        .explode("country")
-        .explode("institution")
-    )
-    pairs = pairs[pairs["country"].notna() & pairs["institution"].notna() & pairs["country"].ne("") & pairs["institution"].ne("")]
-    pairs["country"] = pairs["country"].apply(country_display)
-    grouped = pairs.groupby(["country", "institution"], as_index=False).agg(participations=("paper_id", "count"))
-    top_country_names = grouped.groupby("country")["participations"].sum().sort_values(ascending=False).head(top_countries).index.tolist()
-    top_inst_names = grouped.groupby("institution")["participations"].sum().sort_values(ascending=False).head(top_institutions).index.tolist()
-    grouped = grouped[grouped["country"].isin(top_country_names) & grouped["institution"].isin(top_inst_names)]
-    if grouped.empty:
-        return empty_figure("Institution-Country Orbit")
-    angles = np.linspace(0, 2 * math.pi, len(top_country_names), endpoint=False)
-    country_pos = {country: (0.42 * math.cos(a), 0.42 * math.sin(a)) for country, a in zip(top_country_names, angles)}
-    inst_primary = grouped.sort_values("participations", ascending=False).drop_duplicates("institution")
-    inst_pos = {}
-    for idx, row in enumerate(inst_primary.itertuples(index=False)):
-        base_x, base_y = country_pos[row.country]
-        angle = angles[top_country_names.index(row.country)] + 0.45 + (idx % 7) * 0.2
-        radius = 0.34 + 0.025 * (idx % 5)
-        inst_pos[row.institution] = (base_x + radius * math.cos(angle), base_y + radius * math.sin(angle))
-    fig = go.Figure()
-    for row in grouped.sort_values("participations", ascending=False).head(45).itertuples(index=False):
-        if row.institution not in inst_pos:
-            continue
-        x0, y0 = country_pos[row.country]
-        x1, y1 = inst_pos[row.institution]
-        fig.add_trace(go.Scatter(x=[x0, x1], y=[y0, y1], mode="lines", line={"color": "rgba(217,79,131,0.22)", "width": 0.7 + math.sqrt(row.participations) * 0.12}, hoverinfo="skip", showlegend=False))
-    fig.add_trace(
-        go.Scatter(
-            x=[country_pos[c][0] for c in top_country_names],
-            y=[country_pos[c][1] for c in top_country_names],
-            mode="markers+text",
-            text=top_country_names,
-            textposition="middle center",
-            marker={"size": 54, "color": TOPIC_COLORS[1], "opacity": 0.9, "line": {"color": "#fff7fb", "width": 1.5}},
-            hovertemplate="%{text}<br>Country hub<extra></extra>",
-            showlegend=False,
-        )
-    )
-    inst_counts = grouped.groupby("institution")["participations"].sum()
-    fig.add_trace(
-        go.Scatter(
-            x=[inst_pos[i][0] for i in inst_pos],
-            y=[inst_pos[i][1] for i in inst_pos],
-            mode="markers+text",
-            text=list(inst_pos),
-            textposition="top center",
-            marker={
-                "size": [11 + 23 * math.sqrt(inst_counts.get(i, 1) / max(inst_counts.max(), 1)) for i in inst_pos],
-                "color": TOPIC_COLORS[0],
-                "opacity": 0.82,
-                "line": {"color": "#fff7fb", "width": 1},
-            },
-            hovertemplate="%{text}<br>Institution orbit<extra></extra>",
-            showlegend=False,
-        )
-    )
-    fig.update_layout(title="Collaboration Orbits · institutions around country hubs", xaxis={"visible": False}, yaxis={"visible": False})
-    return apply_research_layout(fig, height=540, legend=False)
-
-
 def make_metadata_weather(papers: pd.DataFrame) -> go.Figure:
     data = metadata_weather_table(papers)
     if data.empty:
         return empty_figure("Metadata Weather")
-    colors = {"stormy": "#8f63a9", "cloudy": "#7f9ca3", "bright": "#e59a62", "sunny": "#d94f83"}
+    colors = {"stormy": "#9b7bb8", "cloudy": "#5db8a6", "bright": "#e8a55a", "sunny": "#cc785c"}
     symbols = {"stormy": "x", "cloudy": "circle", "bright": "diamond", "sunny": "star"}
     fig = go.Figure()
     for weather, frame in data.groupby("weather"):
@@ -431,7 +435,13 @@ def make_metadata_weather(papers: pd.DataFrame) -> go.Figure:
                 name=weather.title(),
                 text=[{"stormy": "⛈", "cloudy": "☁", "bright": "◐", "sunny": "☀"}.get(weather, "•")] * len(frame),
                 textposition="middle center",
-                marker={"size": 34, "symbol": symbols.get(weather, "circle"), "color": colors.get(weather, TOPIC_COLORS[0]), "opacity": 0.84, "line": {"color": "#fff7fb", "width": 1}},
+                marker={
+                    "size": 34,
+                    "symbol": symbols.get(weather, "circle"),
+                    "color": colors.get(weather, TOPIC_COLORS[0]),
+                    "opacity": 0.84,
+                    "line": {"color": _CANVAS, "width": 1},
+                },
                 customdata=frame[["institution_coverage", "country_coverage", "confidence", "papers"]],
                 hovertemplate=(
                     "%{x}<br>Quality %{y:.1f}%<br>"
@@ -442,7 +452,12 @@ def make_metadata_weather(papers: pd.DataFrame) -> go.Figure:
                 ),
             )
         )
-    fig.update_layout(title="Metadata Weather · quality climate by year", yaxis={"range": [0, 105], "ticksuffix": "%"}, xaxis_title="Year", yaxis_title="Quality score")
+    fig.update_layout(
+        title="Metadata Weather · quality climate by year",
+        yaxis={"range": [0, 105], "ticksuffix": "%"},
+        xaxis_title="Year",
+        yaxis_title="Quality score",
+    )
     return apply_research_layout(fig, height=430)
 
 
@@ -450,20 +465,29 @@ def make_paper_universe(papers: pd.DataFrame, max_points: int = 3500) -> go.Figu
     points = paper_universe_points(papers, max_points=max_points)
     if points.empty:
         return empty_figure("Paper Universe")
-    hover_data = {"x": False, "y": False}
+    hover_data: dict = {"x": False, "y": False}
     for column in ["year", "authors_text", "countries_text", "institutions_text"]:
         if column in points.columns:
             hover_data[column] = True
+
     if "affiliation_confidence" in points.columns:
-        hover_data["affiliation_confidence"] = ":.2f"
+        points = points.copy()
+        points["affiliation_confidence"] = points["affiliation_confidence"].fillna(0.0).clip(lower=0.0)
+        size_col = "affiliation_confidence" if points["affiliation_confidence"].gt(0).any() else None
+        if size_col:
+            hover_data["affiliation_confidence"] = ":.2f"
+    else:
+        size_col = None
+
+    custom_data_cols = ["year"] if "year" in points.columns else None
+
     fig = px.scatter(
-        points,
-        x="x",
-        y="y",
+        points, x="x", y="y",
         color="topic_label" if "topic_label" in points.columns else None,
-        size="affiliation_confidence" if "affiliation_confidence" in points.columns else None,
+        size=size_col,
         hover_name="title" if "title" in points.columns else None,
         hover_data=hover_data,
+        custom_data=custom_data_cols,
         color_discrete_sequence=TOPIC_COLORS,
         title="Paper Universe · sampled title/topic starfield",
     )
@@ -492,5 +516,11 @@ def make_topic_dna(papers: pd.DataFrame) -> go.Figure:
                 hovertemplate="%{fullData.name}<br>%{x}<br>%{y:.1f}% share<br>%{customdata[0]:,} papers<extra></extra>",
             )
         )
-    fig.update_layout(title="Topic DNA · yearly research genome barcode", barmode="stack", xaxis_title="Year", yaxis={"range": [0, 100], "ticksuffix": "%"}, yaxis_title="Topic composition")
+    fig.update_layout(
+        title="Topic DNA · yearly research genome barcode",
+        barmode="stack",
+        xaxis_title="Year",
+        yaxis={"range": [0, 100], "ticksuffix": "%"},
+        yaxis_title="Topic composition",
+    )
     return apply_research_layout(fig, height=500)

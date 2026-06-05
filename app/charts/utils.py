@@ -125,18 +125,24 @@ COUNTRY_NAME_TO_ISO3.update(
 )
 
 
-def split_tokens(value: object) -> list[str]:
+def split_tokens(value: object, sep: str = ",") -> list[str]:
     if value is None or (isinstance(value, float) and math.isnan(value)):
         return []
-    tokens = [part.strip() for part in str(value).split(",")]
+    tokens = [part.strip() for part in str(value).split(sep)]
     return [token for token in tokens if token and token != "Unknown"]
 
 
 def explode_tokens(papers: pd.DataFrame, source_column: str, output_column: str) -> pd.DataFrame:
+    """Explode a delimited text column into one row per token.
+
+    Uses '|' as separator for institutions_text (to handle institution names
+    that contain commas), and ',' for all other columns.
+    """
     if papers.empty or source_column not in papers.columns:
         return pd.DataFrame(columns=list(papers.columns) + [output_column])
+    sep = " | " if source_column == "institutions_text" else ","
     data = papers.copy()
-    data[output_column] = data[source_column].apply(split_tokens)
+    data[output_column] = data[source_column].apply(lambda v: split_tokens(v, sep))
     data = data.explode(output_column)
     data[output_column] = data[output_column].fillna("")
     return data[data[output_column].ne("")].copy()

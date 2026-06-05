@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import plotly.graph_objects as go
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 APP_ROOT = Path(__file__).resolve().parent
@@ -11,31 +12,23 @@ for path in (PROJECT_ROOT, APP_ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from shiny import App, reactive, render, ui
+from shiny import App, reactive, render, req, ui
 from shinywidgets import output_widget, render_widget
 
 from charts.collaboration import make_collaboration_flow
-from charts.coverage import make_coverage_strip
 from charts.creative import (
-    make_institution_country_orbit,
-    make_metadata_weather,
-    make_paper_universe,
-    make_research_bloom,
+    make_institution_country_treemap,
     make_research_river,
-    make_topic_dna,
-    make_topic_galaxy,
     make_topic_race,
 )
-from charts.explorer import paper_table
+from charts.explorer import make_explorer_html
 from charts.forecast import make_forecast_focus
-from charts.geography import make_country_map
+from charts.geography import make_country_map, make_country_trend
 from charts.heatmap import make_topic_heatmap
 from charts.institutions import make_institution_leaderboard
-from charts.momentum import make_topic_momentum, topic_momentum_table
+from charts.momentum import make_topic_momentum
 from charts.network import make_topic_network
-from charts.provenance import SOURCE_LABELS, make_affiliation_provenance
 from charts.streamgraph import make_topic_growth
-from charts.utils import explode_tokens
 from data_loader import load_data
 from filters import apply_filters
 
@@ -45,19 +38,15 @@ PAPERS = DATA["papers"]
 YEAR_MIN = int(PAPERS["year"].min())
 YEAR_MAX = int(PAPERS["year"].max())
 TOPIC_CHOICES = ["All"] + sorted(PAPERS["topic_label"].dropna().unique().tolist())
-TOPIC_CHIPS = PAPERS["topic_label"].value_counts().head(5).index.tolist()
 COUNTRY_CHOICES = ["All"] + sorted(
     {part.strip() for value in PAPERS["countries_text"].dropna() for part in str(value).split(",") if part.strip()}
 )
 INSTITUTION_CHOICES = ["All"] + sorted(
-    {part.strip() for value in PAPERS["institutions_text"].dropna() for part in str(value).split(",") if part.strip()}
+    DATA["institution_year"]
+    .loc[DATA["institution_year"]["institution"].ne("Unknown"), "institution"]
+    .unique()
+    .tolist()
 )
-
-
-def percent(value: float, digits: int = 0) -> str:
-    if pd.isna(value):
-        return "0%"
-    return f"{value * 100:.{digits}f}%"
 
 
 def kpi_card(title: str, output_id: str, note: str):
@@ -69,15 +58,6 @@ def kpi_card(title: str, output_id: str, note: str):
     )
 
 
-def pulse_card(title: str, output_id: str, note_id: str):
-    return ui.div(
-        ui.div(title, class_="pulse-label"),
-        ui.output_text(output_id),
-        ui.div(ui.output_text(note_id), class_="pulse-note"),
-        class_="pulse-card",
-    )
-
-
 def panel(title: str, subtitle: str, output_id: str, *classes: str):
     return ui.div(
         ui.div(ui.h3(title), ui.p(subtitle), class_="panel-header"),
@@ -86,25 +66,15 @@ def panel(title: str, subtitle: str, output_id: str, *classes: str):
     )
 
 
-def creative_tab(title: str, subtitle: str, output_id: str):
-    return ui.nav_panel(
-        title,
-        ui.div(
-            ui.div(ui.h3(title), ui.p(subtitle), class_="panel-header"),
-            output_widget(output_id),
-            class_="creative-tab-panel",
-        ),
-    )
-
-
 app_ui = ui.page_fluid(
     ui.include_css(APP_ROOT / "www" / "styles.css"),
     ui.div(
+        # ── Sidebar ──────────────────────────────────────────
         ui.div(
             ui.div(
                 ui.div("NeurIPS Observatory", class_="brand-mark"),
                 ui.h1("AI Conference Research Observatory"),
-                ui.p("A soft-pink analytical atlas of NeurIPS topics, geography, institutions, forecasts, and metadata confidence."),
+                ui.p("Minimalist analytical atlas of NeurIPS topics, geography, institutions, and forecasts."),
                 class_="brand-block",
             ),
             ui.div(
@@ -125,91 +95,93 @@ app_ui = ui.page_fluid(
             ),
             class_="sidebar",
         ),
+        # ── Main content ──────────────────────────────────────
         ui.div(
             ui.div(
                 ui.div(
                     ui.div("Research dashboard", class_="eyebrow"),
                     ui.h2("NeurIPS research landscape"),
-                    ui.p("Explore topic shifts, metadata quality, global participation, institutional output, and forecast signals."),
+                    ui.p("Explore topic shifts, global participation, institutional output, and forecast signals."),
                     class_="page-title",
                 ),
                 ui.div(
-                    ui.span("Soft rose analytical theme", class_="status-pill"),
                     ui.span(ui.output_text("status_papers"), class_="status-pill subtle"),
                     class_="status-strip",
                 ),
                 class_="topbar",
             ),
             ui.div(
-                kpi_card("Filtered papers", "kpi_papers", "Unique proceedings papers"),
-                kpi_card("Year span", "kpi_years", "Visible range after filters"),
-                kpi_card("Topics represented", "kpi_topics", "Primary topic labels"),
-                kpi_card("Known institutions", "kpi_institutions", "Paper-level coverage"),
-                kpi_card("Known countries", "kpi_countries", "Paper-level coverage"),
-                kpi_card("Review workload", "kpi_review", "Topic audit flags"),
-                class_="kpi-grid",
-            ),
-            ui.div(
-                ui.div(
-                    ui.div("Research Pulse", class_="section-eyebrow"),
-                    ui.h3("Live interpretation of the current selection"),
-                    ui.p("These cards summarize rising topics, collaboration breadth, metadata confidence, and provenance mix."),
-                    class_="section-intro",
+                ui.navset_underline(
+                    # ── Tab 1: Overview ──────────────────────────────
+                    ui.nav_panel(
+                        "Overview",
+                        ui.div(
+                            kpi_card("Filtered papers", "kpi_papers", "Unique proceedings papers"),
+                            kpi_card("Year span", "kpi_years", "Visible range after filters"),
+                            kpi_card("Topics represented", "kpi_topics", "Primary topic labels"),
+                            kpi_card("Known institutions", "kpi_institutions", "Paper-level coverage"),
+                            kpi_card("Known countries", "kpi_countries", "Paper-level coverage"),
+                            kpi_card("Review workload", "kpi_review", "Topic audit flags"),
+                            class_="kpi-grid",
+                        ),
+                    ),
+                    # ── Tab 2: Topics ─────────────────────────────────
+                    ui.nav_panel(
+                        "Topics",
+                        ui.div(
+                            panel("Topic growth", "Stacked area by topic; dashed lines = Holt-Winters forecasts. Box-select to brush year range.", "topic_growth", "hero-panel"),
+                            panel("Forecast focus", "Solid = observed, dotted = forecast, band = 95% CI.", "forecast_focus"),
+                            panel("Topic momentum", "Bars show share gain/loss: recent vs. early years. Right = rising; left = fading.", "topic_momentum"),
+                            panel("Topic heatmap", "Click any cell to filter by topic. Colour intensity = share of papers that year.", "topic_heatmap", "tall"),
+                            panel("Topic similarity", "Colour intensity = pairwise co-occurrence weight. Click a cell to filter by topic.", "topic_network"),
+                            panel("Research River", "Eras flow left-to-right into dominant research themes. Width ∝ paper share.", "research_river"),
+                            panel("Topic Race", "Lines show annual rank changes. Rising = growing topics; crossing lines = leadership changes.", "topic_race"),
+                            class_="dashboard-grid",
+                        ),
+                    ),
+                    # ── Tab 3: Geography ──────────────────────────────
+                    ui.nav_panel(
+                        "Geography",
+                        ui.div(
+                            panel("Global footprint", "Click a country to filter. Animate to watch participation grow from 1987.", "country_map", "tall"),
+                            panel("Top countries per year", "Annual paper-participation count for the top 10 countries. Lines show trajectories; use sidebar filters to compare subsets.", "country_trend"),
+                            panel("Country-topic focus", "Colour intensity = % of each country's papers in that topic. Each row sums to 100%.", "collaboration_flow"),
+                            class_="dashboard-grid",
+                        ),
+                    ),
+                    # ── Tab 4: Institutions ───────────────────────────
+                    ui.nav_panel(
+                        "Institutions",
+                        ui.div(
+                            panel("Institution leaderboard", "Click a bar to filter by institution. Top-12 by paper participation count.", "institution_leaderboard"),
+                            panel("Institution-country distribution", "Tile area = paper count. Countries are parent tiles; institutions are children.", "institution_country_treemap"),
+                            class_="dashboard-grid",
+                        ),
+                    ),
+                    # ── Tab 5: Explorer ───────────────────────────────
+                    ui.nav_panel(
+                        "Explorer",
+                        ui.div(
+                            ui.div(
+                                ui.h3("Paper Explorer"),
+                                ui.p("All papers matching the active sidebar filters. Search by title or author, then click any URL link to open the paper."),
+                                class_="panel-header",
+                            ),
+                            ui.div(
+                                ui.input_text(
+                                    "explorer_search",
+                                    "Search title / author",
+                                    placeholder="Type to filter…",
+                                ),
+                                class_="explorer-search-row",
+                            ),
+                            ui.output_ui("papers_html"),
+                            class_="panel table-panel",
+                        ),
+                    ),
+                    id="main_tabs",
                 ),
-                ui.div(
-                    pulse_card("Rising topic", "pulse_rising", "pulse_rising_note"),
-                    pulse_card("Collaboration breadth", "pulse_collab", "pulse_collab_note"),
-                    pulse_card("Affiliation confidence", "pulse_confidence", "pulse_confidence_note"),
-                    pulse_card("Dominant source", "pulse_source", "pulse_source_note"),
-                    class_="pulse-grid",
-                ),
-                class_="research-pulse",
-            ),
-            ui.div(
-                ui.span("Quick topic focus", class_="chip-label"),
-                *[
-                    ui.input_action_button(f"topic_chip_{idx}", topic, class_="topic-chip")
-                    for idx, topic in enumerate(TOPIC_CHIPS)
-                ],
-                class_="topic-chip-row",
-            ),
-            ui.div(
-                ui.div(
-                    ui.div("Creative Visual Lab", class_="section-eyebrow"),
-                    ui.h3("Experimental views that turn the NeurIPS corpus into galaxies, blooms, rivers, races, weather, orbits, DNA, and starfields."),
-                    ui.p("All eight creative panels respond to the same year/topic/country/institution filters. Use the tabs to explore without overcrowding the dashboard."),
-                    class_="creative-intro",
-                ),
-                ui.navset_tab(
-                    creative_tab("Topic Galaxy", "A glowing constellation of topic scale and secondary-topic links.", "topic_galaxy"),
-                    creative_tab("Research River", "Eras flow into dominant research themes like a braided river.", "research_river"),
-                    creative_tab("Topic Race", "Annual rank changes show which topics climb, fall, and hold leadership.", "topic_race"),
-                    creative_tab("Research Bloom", "A radial rose where topic petals encode scale and recent growth.", "research_bloom"),
-                    creative_tab("Collaboration Orbits", "Institutions orbit around country hubs through participation links.", "institution_country_orbit"),
-                    creative_tab("Metadata Weather", "Data quality becomes a yearly climate map of sunny and cloudy periods.", "metadata_weather"),
-                    creative_tab("Paper Universe", "A sampled title/topic TF-IDF starfield of individual papers.", "paper_universe"),
-                    creative_tab("Topic DNA", "A compact barcode of yearly topic composition.", "topic_dna"),
-                    id="creative_tabs",
-                ),
-                class_="creative-lab",
-            ),
-            ui.div(
-                panel("Topic growth", "Stacked history with broad-view forecast overlays.", "topic_growth", "hero-panel"),
-                panel("Forecast focus", "Observed vs forecast trajectories for leading filtered topics.", "forecast_focus"),
-                panel("Topic momentum", "Recent share changes reveal rising and fading research areas.", "topic_momentum"),
-                panel("Topic heatmap", "Relative topic share by year.", "topic_heatmap", "tall"),
-                panel("Global footprint", "Country-paper participations over time; multi-country papers count once per country.", "country_map", "tall"),
-                panel("Country-topic exposure", "Sankey flow from leading countries into leading topics.", "collaboration_flow"),
-                panel("Metadata coverage", "Filtered paper-level coverage and confidence over time.", "coverage_strip", "compact-panel"),
-                panel("Affiliation provenance", "How affiliation data was recovered across sources.", "affiliation_provenance", "compact-panel"),
-                panel("Institutions", "Institution-paper participation leaderboard.", "institution_leaderboard"),
-                panel("Topic network", "Filtered topic similarity co-structure.", "topic_network"),
-                ui.div(
-                    ui.div(ui.h3("Paper Explorer"), ui.p("Searchable paper-level audit table with topic, affiliation, confidence, and link fields."), class_="panel-header"),
-                    ui.output_data_frame("papers_table"),
-                    class_="panel table-panel",
-                ),
-                class_="dashboard-grid",
+                class_="main-tabs-wrapper",
             ),
             class_="dashboard-main",
         ),
@@ -219,6 +191,10 @@ app_ui = ui.page_fluid(
 
 
 def server(input, output, session):
+    _clicked_institution = reactive.Value(None)
+    _clicked_topic = reactive.Value(None)
+    _brushed_years = reactive.Value(None)
+
     @reactive.Effect
     @reactive.event(input.reset_filters)
     def _reset_filters():
@@ -226,15 +202,9 @@ def server(input, output, session):
         ui.update_selectize("topic", selected="All")
         ui.update_selectize("country", selected="All")
         ui.update_selectize("institution", selected="All")
-
-    def _bind_topic_chip(idx: int, topic: str):
-        @reactive.Effect
-        @reactive.event(getattr(input, f"topic_chip_{idx}"))
-        def _topic_chip_click():
-            ui.update_selectize("topic", selected=topic)
-
-    for chip_idx, chip_topic in enumerate(TOPIC_CHIPS):
-        _bind_topic_chip(chip_idx, chip_topic)
+        _clicked_institution.set(None)
+        _clicked_topic.set(None)
+        _brushed_years.set(None)
 
     @reactive.Calc
     def filtered_papers():
@@ -245,6 +215,8 @@ def server(input, output, session):
             input.country(),
             input.institution(),
         )
+
+    # ── KPI outputs ───────────────────────────────────────────
 
     @output
     @render.text
@@ -257,7 +229,7 @@ def server(input, output, session):
         data = filtered_papers()
         if data.empty:
             return "No data"
-        return f"{int(data['year'].min())}-{int(data['year'].max())}"
+        return f"{int(data['year'].min())}–{int(data['year'].max())}"
 
     @output
     @render.text
@@ -273,7 +245,8 @@ def server(input, output, session):
         data = filtered_papers()
         if data.empty:
             return "0%"
-        return percent(data["institution_known"].mean())
+        v = data["institution_known"].mean()
+        return f"{v * 100:.0f}%"
 
     @output
     @render.text
@@ -281,7 +254,8 @@ def server(input, output, session):
         data = filtered_papers()
         if data.empty:
             return "0%"
-        return percent(data["country_known"].mean())
+        v = data["country_known"].mean()
+        return f"{v * 100:.0f}%"
 
     @output
     @render.text
@@ -290,91 +264,32 @@ def server(input, output, session):
         if data.empty or "topic_review_flag" not in data.columns:
             return "0 · 0%"
         flagged = int(data["topic_review_flag"].sum())
-        return f"{flagged:,} · {percent(data['topic_review_flag'].mean(), 1)}"
+        pct = data["topic_review_flag"].mean() * 100
+        return f"{flagged:,} · {pct:.1f}%"
 
     @output
     @render.text
     def status_papers():
         data = filtered_papers()
-        known_inst = percent(data["institution_known"].mean(), 1) if not data.empty else "0%"
-        return f"{len(data):,} papers · {known_inst} institution coverage"
+        pct = f"{data['institution_known'].mean() * 100:.1f}%" if not data.empty else "0%"
+        return f"{len(data):,} papers · {pct} institution coverage"
 
-    @output
-    @render.text
-    def pulse_rising():
-        data = topic_momentum_table(filtered_papers())
-        if data.empty:
-            return "Not enough years"
-        return str(data.iloc[0]["topic_label"])
-
-    @output
-    @render.text
-    def pulse_rising_note():
-        data = topic_momentum_table(filtered_papers())
-        if data.empty:
-            return "Select a wider year range."
-        row = data.iloc[0]
-        return f"{row['delta_pp']:+.1f} pp recent-share shift"
-
-    @output
-    @render.text
-    def pulse_collab():
-        data = filtered_papers()
-        countries = explode_tokens(data, "countries_text", "country")
-        if data.empty or countries.empty:
-            return "No known countries"
-        per_paper = len(countries) / max(len(data), 1)
-        return f"{per_paper:.2f} countries/paper"
-
-    @output
-    @render.text
-    def pulse_collab_note():
-        countries = explode_tokens(filtered_papers(), "countries_text", "country")
-        if countries.empty:
-            return "Country metadata unavailable."
-        top = countries["country"].value_counts().head(1)
-        return f"Top participation: {top.index[0]} ({int(top.iloc[0]):,})"
-
-    @output
-    @render.text
-    def pulse_confidence():
-        data = filtered_papers()
-        if data.empty:
-            return "0%"
-        return percent(data["affiliation_confidence"].mean(), 1)
-
-    @output
-    @render.text
-    def pulse_confidence_note():
-        data = filtered_papers()
-        if data.empty:
-            return "No filtered papers."
-        openalex = data["openalex_match_method"].fillna("none").ne("none").mean() if "openalex_match_method" in data.columns else 0
-        return f"OpenAlex match rate: {percent(openalex, 1)}"
-
-    @output
-    @render.text
-    def pulse_source():
-        data = filtered_papers()
-        if data.empty or "affiliation_source" not in data.columns:
-            return "None"
-        source = data["affiliation_source"].fillna("none").value_counts().index[0]
-        return SOURCE_LABELS.get(source, source)
-
-    @output
-    @render.text
-    def pulse_source_note():
-        data = filtered_papers()
-        if data.empty or "affiliation_source" not in data.columns:
-            return "No provenance information."
-        counts = data["affiliation_source"].fillna("none").value_counts(normalize=True)
-        source = counts.index[0]
-        return f"{percent(float(counts.iloc[0]), 1)} of filtered papers"
+    # ── Topic charts ──────────────────────────────────────────
 
     @output
     @render_widget
     def topic_growth():
-        return make_topic_growth(filtered_papers(), DATA["forecast"])
+        fw = go.FigureWidget(make_topic_growth(filtered_papers(), DATA["forecast"]))
+
+        def _on_select(trace, points, selector):
+            xs = list(points.xs) if points.xs else []
+            years = [int(x) for x in xs if x is not None]
+            if len(years) >= 2:
+                _brushed_years.set((min(years), max(years)))
+
+        for trace in fw.data:
+            trace.on_selection(_on_select)
+        return fw
 
     @output
     @render_widget
@@ -388,43 +303,31 @@ def server(input, output, session):
 
     @output
     @render_widget
-    def country_map():
-        return make_country_map(filtered_papers())
-
-    @output
-    @render_widget
-    def collaboration_flow():
-        return make_collaboration_flow(filtered_papers())
-
-    @output
-    @render_widget
-    def institution_leaderboard():
-        return make_institution_leaderboard(filtered_papers())
-
-    @output
-    @render_widget
-    def coverage_strip():
-        return make_coverage_strip(DATA["coverage"], filtered_papers())
-
-    @output
-    @render_widget
-    def affiliation_provenance():
-        return make_affiliation_provenance(filtered_papers())
-
-    @output
-    @render_widget
     def topic_heatmap():
-        return make_topic_heatmap(filtered_papers())
+        fw = go.FigureWidget(make_topic_heatmap(filtered_papers()))
+
+        def _on_click(trace, points, selector):
+            ys = list(points.ys) if points.ys else []
+            if ys:
+                _clicked_topic.set(str(ys[0]))
+
+        for trace in fw.data:
+            trace.on_click(_on_click)
+        return fw
 
     @output
     @render_widget
     def topic_network():
-        return make_topic_network(filtered_papers(), DATA["topic_edges"])
+        fw = go.FigureWidget(make_topic_network(filtered_papers(), DATA["topic_edges"]))
 
-    @output
-    @render_widget
-    def topic_galaxy():
-        return make_topic_galaxy(filtered_papers())
+        def _on_click(trace, points, selector):
+            ys = list(points.ys) if points.ys else []
+            if ys:
+                _clicked_topic.set(str(ys[0]))
+
+        for trace in fw.data:
+            trace.on_click(_on_click)
+        return fw
 
     @output
     @render_widget
@@ -436,35 +339,87 @@ def server(input, output, session):
     def topic_race():
         return make_topic_race(filtered_papers())
 
-    @output
-    @render_widget
-    def research_bloom():
-        return make_research_bloom(filtered_papers())
+    # ── Geography charts ──────────────────────────────────────
 
     @output
     @render_widget
-    def institution_country_orbit():
-        return make_institution_country_orbit(filtered_papers())
+    def country_map():
+        return make_country_map(filtered_papers())
 
     @output
     @render_widget
-    def metadata_weather():
-        return make_metadata_weather(filtered_papers())
+    def country_trend():
+        return make_country_trend(filtered_papers())
 
     @output
     @render_widget
-    def paper_universe():
-        return make_paper_universe(filtered_papers())
+    def collaboration_flow():
+        return make_collaboration_flow(filtered_papers())
+
+    # ── Institution charts ────────────────────────────────────
 
     @output
     @render_widget
-    def topic_dna():
-        return make_topic_dna(filtered_papers())
+    def institution_leaderboard():
+        fw = go.FigureWidget(make_institution_leaderboard(filtered_papers()))
+
+        def _on_click(trace, points, selector):
+            if points.point_inds:
+                idx = points.point_inds[0]
+                y_data = list(trace.y) if trace.y is not None else []
+                if idx < len(y_data):
+                    _clicked_institution.set(str(y_data[idx]))
+
+        for trace in fw.data:
+            trace.on_click(_on_click)
+        return fw
 
     @output
-    @render.data_frame
-    def papers_table():
-        return render.DataGrid(paper_table(filtered_papers()), filters=True, selection_mode="row")
+    @render_widget
+    def institution_country_treemap():
+        return make_institution_country_treemap(filtered_papers())
+
+    # ── Explorer ──────────────────────────────────────────────
+
+    @reactive.Calc
+    def explorer_papers():
+        data = filtered_papers()
+        search = input.explorer_search().strip().lower()
+        if search:
+            mask = (
+                data["title"].fillna("").str.lower().str.contains(search, regex=False)
+                | data["authors_text"].fillna("").str.lower().str.contains(search, regex=False)
+            )
+            data = data[mask]
+        return data
+
+    @output
+    @render.ui
+    def papers_html():
+        return ui.HTML(make_explorer_html(explorer_papers()))
+
+    # ── Cross-filter effects ──────────────────────────────────
+
+    @reactive.Effect
+    def _institution_cross_filter():
+        name = _clicked_institution.get()
+        if name and name in INSTITUTION_CHOICES:
+            ui.update_selectize("institution", selected=name)
+
+    @reactive.Effect
+    def _topic_cross_filter():
+        name = _clicked_topic.get()
+        if name and name in TOPIC_CHOICES:
+            ui.update_selectize("topic", selected=name)
+
+    @reactive.Effect
+    def _year_brush_apply():
+        yr = _brushed_years.get()
+        if yr:
+            y_min = max(YEAR_MIN, yr[0])
+            y_max = min(YEAR_MAX, yr[1])
+            if y_min <= y_max:
+                ui.update_slider("year_range", value=(y_min, y_max))
 
 
 app = App(app_ui, server)

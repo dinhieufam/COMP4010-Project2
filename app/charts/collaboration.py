@@ -3,56 +3,87 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from .theme import TOPIC_COLORS, apply_research_layout, empty_figure
+from .theme import CORAL_SCALE, apply_research_layout, empty_figure
 from .utils import country_display, explode_tokens
 
 
-def make_collaboration_flow(papers: pd.DataFrame, top_n: int = 8) -> go.Figure:
+def make_collaboration_flow(papers: pd.DataFrame, top_n: int = 12) -> go.Figure:
+    """Country-topic focus heatmap.
+
+    Rows = top countries; columns = top topics.
+    Colour = percentage of that country's papers in each topic (row-normalised),
+    so each row answers "which topics does this country focus on?"
+    """
     if papers.empty:
-        return empty_figure("Country-topic exposure flow")
+        return empty_figure("Country-topic focus")
+
     country_source = "countries_iso2_text" if "countries_iso2_text" in papers.columns else "countries_text"
     countries = explode_tokens(papers, country_source, "country")
     if countries.empty:
-        return empty_figure("Country-topic exposure flow", "No known country metadata in the current selection.")
+        return empty_figure("Country-topic focus", "No known country metadata in the current selection.")
+
     countries["country"] = countries["country"].apply(country_display)
     grouped = (
         countries.groupby(["country", "topic_label"], as_index=False)
-        .agg(participations=("paper_id", "count"))
-        .sort_values("participations", ascending=False)
+        .agg(papers=("paper_id", "count"))
     )
-    top_countries = grouped.groupby("country")["participations"].sum().sort_values(ascending=False).head(top_n).index
-    top_topics = grouped.groupby("topic_label")["participations"].sum().sort_values(ascending=False).head(top_n).index
-    grouped = grouped[grouped["country"].isin(top_countries) & grouped["topic_label"].isin(top_topics)]
-    grouped = grouped.sort_values("participations", ascending=False).head(36)
-    if grouped.empty:
-        return empty_figure("Country-topic exposure flow")
 
-    country_nodes = grouped["country"].drop_duplicates().tolist()
-    topic_nodes = grouped["topic_label"].drop_duplicates().tolist()
-    labels = country_nodes + topic_nodes
-    index = {label: idx for idx, label in enumerate(labels)}
-    source = grouped["country"].map(index).tolist()
-    target = grouped["topic_label"].map(index).tolist()
-    values = grouped["participations"].tolist()
-    node_colors = [TOPIC_COLORS[1]] * len(country_nodes) + [TOPIC_COLORS[i % len(TOPIC_COLORS)] for i in range(len(topic_nodes))]
+    top_countries = (
+        grouped.groupby("country")["papers"].sum()
+        .sort_values(ascending=False).head(top_n).index
+    )
+    top_topics = (
+        grouped.groupby("topic_label")["papers"].sum()
+        .sort_values(ascending=False).head(top_n).index
+    )
+    grouped = grouped[grouped["country"].isin(top_countries) & grouped["topic_label"].isin(top_topics)]
+    if grouped.empty:
+        return empty_figure("Country-topic focus")
+
+    matrix = grouped.pivot_table(index="country", columns="topic_label", values="papers", fill_value=0)
+    # Row-normalise: % of each country's papers per topic
+    row_totals = matrix.sum(axis=1).replace(0, 1)
+    normalised = (matrix.div(row_totals, axis=0) * 100).round(1)
+
+    # Order countries by total paper count (most papers at top)
+    country_order = (
+        grouped.groupby("country")["papers"].sum()
+        .sort_values(ascending=True).index.tolist()
+    )
+    normalised = normalised.reindex([c for c in country_order if c in normalised.index])
+
+    # Raw counts for hover
+    raw = matrix.reindex(normalised.index)
+
     fig = go.Figure(
-        go.Sankey(
-            arrangement="snap",
-            node={
-                "pad": 14,
-                "thickness": 13,
-                "line": {"color": "rgba(122, 70, 91, 0.25)", "width": 0.7},
-                "label": labels,
-                "color": node_colors,
+        go.Heatmap(
+            x=normalised.columns.tolist(),
+            y=normalised.index.tolist(),
+            z=normalised.values,
+            customdata=raw.values,
+            colorscale=CORAL_SCALE,
+            showscale=True,
+            colorbar={
+                "title": {"text": "% of country<br>papers", "side": "right"},
+                "thickness": 12,
+                "len": 0.8,
+                "ticksuffix": "%",
+                "tickfont": {"size": 10},
             },
-            link={
-                "source": source,
-                "target": target,
-                "value": values,
-                "color": "rgba(217, 79, 131, 0.22)",
-                "hovertemplate": "%{source.label} → %{target.label}<br>%{value:,} country-topic participations<extra></extra>",
-            },
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                "Topic: %{x}<br>"
+                "%{z:.1f}% of country papers<br>"
+                "(%{customdata:,} papers)<extra></extra>"
+            ),
+            xgap=1,
+            ygap=1,
         )
     )
-    fig.update_layout(title="Country-topic exposure flow · participations")
-    return apply_research_layout(fig, height=450, legend=False)
+    fig.update_layout(
+        title="Country-topic focus · normalised topic share per country",
+        xaxis={"tickangle": -40, "tickfont": {"size": 9}, "side": "bottom"},
+        yaxis={"tickfont": {"size": 10}},
+        margin={"l": 140, "r": 20, "t": 52, "b": 120},
+    )
+    return apply_research_layout(fig, height=460, legend=False)

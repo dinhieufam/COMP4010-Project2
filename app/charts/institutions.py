@@ -29,5 +29,5 @@ def make_institution_leaderboard(papers: pd.DataFrame) -> go.Figure:
         labels={"participations": "Institution-paper participations", "institution": "Institution"},
         color_discrete_sequence=[TOPIC_COLORS[0]],
     )
-    fig.update_traces(marker={"color": TOPIC_COLORS[0], "line": {"color": "#a82255", "width": 0.5}})
+    fig.update_traces(marker={"color": TOPIC_COLORS[0], "line": {"color": "#a9583e", "width": 0.5}})
     return apply_research_layout(fig, height=420, legend=False)

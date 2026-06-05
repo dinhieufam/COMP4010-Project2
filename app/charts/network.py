@@ -1,85 +1,76 @@
 from __future__ import annotations
 
-import math
-
-import networkx as nx
 import pandas as pd
 import plotly.graph_objects as go
 
-from .theme import TOPIC_COLORS, apply_research_layout, empty_figure
+from .theme import CORAL_SCALE, apply_research_layout, empty_figure
 
 
 def make_topic_network(papers: pd.DataFrame, edges: pd.DataFrame) -> go.Figure:
+    """Topic similarity matrix — colour-encoded adjacency heatmap.
+
+    Replaces edge-thickness encoding: each cell shows the pairwise similarity
+    weight between two topics. Diagonal = relative paper count (self-weight).
+    Click a cell to filter by the y-axis topic.
+    """
     if papers.empty:
-        return empty_figure("Topic similarity network")
-    topic_counts = papers.groupby("topic_label", as_index=False).agg(paper_count=("paper_id", "count"))
-    graph = nx.Graph()
-    for row in topic_counts.to_dict("records"):
-        graph.add_node(row["topic_label"], paper_count=int(row["paper_count"]))
+        return empty_figure("Topic similarity matrix")
+
+    topic_counts = papers.groupby("topic_label")["paper_id"].count().sort_values(ascending=False)
+    topics = topic_counts.head(16).index.tolist()
+    if not topics:
+        return empty_figure("Topic similarity matrix")
+
+    matrix = pd.DataFrame(0.0, index=topics, columns=topics)
+
     if edges is not None and not edges.empty:
-        allowed = set(topic_counts["topic_label"])
-        filtered_edges = edges[
+        allowed = set(topics)
+        filtered = edges[
             edges["source_topic_label"].isin(allowed) & edges["target_topic_label"].isin(allowed)
-        ].sort_values("weight", ascending=False).head(40)
-        for row in filtered_edges.to_dict("records"):
-            source = row.get("source_topic_label")
-            target = row.get("target_topic_label")
-            graph.add_edge(source, target, weight=float(row.get("weight", 0.1)))
-    if graph.number_of_edges() == 0 and graph.number_of_nodes() > 1:
-        nodes = list(graph.nodes)
-        for idx in range(len(nodes) - 1):
-            graph.add_edge(nodes[idx], nodes[idx + 1], weight=0.1)
+        ]
+        for _, row in filtered.iterrows():
+            src = row.get("source_topic_label")
+            tgt = row.get("target_topic_label")
+            w = float(row.get("weight", 0))
+            matrix.loc[src, tgt] = w
+            matrix.loc[tgt, src] = w
 
-    pos = nx.spring_layout(graph, seed=42, k=0.8, iterations=120, weight="weight")
-    edge_traces = []
-    for source, target in graph.edges():
-        x0, y0 = pos[source]
-        x1, y1 = pos[target]
-        weight = float(graph[source][target].get("weight", 0.1))
-        edge_traces.append(
-            go.Scatter(
-                x=[x0, x1],
-                y=[y0, y1],
-                mode="lines",
-                line={"width": 0.8 + 4 * weight, "color": "rgba(216, 137, 164, 0.48)"},
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
+    # Diagonal encodes relative paper volume
+    max_count = max(int(topic_counts.max()), 1)
+    for t in topics:
+        matrix.loc[t, t] = topic_counts.get(t, 0) / max_count
 
-    node_x = []
-    node_y = []
-    sizes = []
-    labels = []
-    max_count = max((attrs.get("paper_count", 1) for _, attrs in graph.nodes(data=True)), default=1)
-    for node, attrs in graph.nodes(data=True):
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        count = attrs.get("paper_count", 1)
-        sizes.append(12 + 34 * math.sqrt(count / max(max_count, 1)))
-        labels.append(f"{node}<br>{count} papers")
+    # Raw counts for hover
+    count_matrix = pd.DataFrame(0, index=topics, columns=topics)
+    for t in topics:
+        count_matrix.loc[t, t] = int(topic_counts.get(t, 0))
 
-    fig = go.Figure()
-    for trace in edge_traces:
-        fig.add_trace(trace)
-    fig.add_trace(
-        go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode="markers+text",
-            text=list(graph.nodes),
-            hovertext=labels,
-            hoverinfo="text",
-            textposition="top center",
-            marker={"size": sizes, "color": TOPIC_COLORS[: len(node_x)], "opacity": 0.88, "line": {"color": "#ffffff", "width": 1}},
-            textfont={"size": 10, "color": "#3b303b"},
+    fig = go.Figure(
+        go.Heatmap(
+            x=topics,
+            y=list(reversed(topics)),
+            z=matrix.reindex(index=list(reversed(topics))).values,
+            colorscale=CORAL_SCALE,
+            showscale=True,
+            colorbar={
+                "title": {"text": "Similarity", "side": "right"},
+                "thickness": 12,
+                "len": 0.8,
+                "tickfont": {"size": 10},
+            },
+            hovertemplate=(
+                "<b>%{y}</b> × <b>%{x}</b><br>"
+                "Similarity weight: %{z:.3f}<br>"
+                "<i>Click to filter by row topic</i><extra></extra>"
+            ),
+            xgap=1,
+            ygap=1,
         )
     )
     fig.update_layout(
-        title="Topic similarity network · filtered topic co-structure",
-        showlegend=False,
-        xaxis={"visible": False},
-        yaxis={"visible": False},
+        title="Topic similarity · pairwise co-occurrence matrix",
+        xaxis={"tickangle": -40, "tickfont": {"size": 9}, "side": "bottom"},
+        yaxis={"tickfont": {"size": 9}},
+        margin={"l": 160, "r": 20, "t": 52, "b": 120},
     )
-    return apply_research_layout(fig, height=420, legend=False)
+    return apply_research_layout(fig, height=500, legend=False)

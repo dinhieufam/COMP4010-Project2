@@ -46,7 +46,7 @@ def make_topic_growth(papers: pd.DataFrame, forecast: pd.DataFrame | None = None
                         y=forecast_topic["forecast_count"],
                         mode="lines",
                         name=f"{topic} forecast",
-                        line={"dash": "dot", "width": 1.8, "color": "#7d5a66"},
+                        line={"dash": "dot", "width": 1.8, "color": "#8e8b82"},
                         showlegend=False,
                         hovertemplate="%{x}<br>%{y:.0f} forecast papers<extra></extra>",
                     )

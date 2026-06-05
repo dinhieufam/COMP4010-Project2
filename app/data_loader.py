@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
 import pandas as pd
+
+_LOG = logging.getLogger(__name__)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +31,13 @@ REQUIRED_FILES = {
 def ensure_processed_data() -> None:
     missing = [name for name in REQUIRED_FILES.values() if not (PROCESSED_DIR / name).exists()]
     if missing:
+        _LOG.warning(
+            "Processed data files not found (%s). Falling back to synthetic sample data. "
+            "Run the pipeline (pipeline/00_seed_sample.py through 07_aggregate_for_app.py) "
+            "to populate %s.",
+            missing,
+            str(PROCESSED_DIR),
+        )
         write_sample_processed()
 
 

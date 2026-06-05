@@ -42,7 +42,7 @@ def make_topic_momentum(papers: pd.DataFrame) -> go.Figure:
             x=focus["delta_pp"],
             y=focus["topic_label"],
             orientation="h",
-            marker={"color": colors, "line": {"color": "rgba(97, 37, 61, 0.25)", "width": 0.8}},
+            marker={"color": colors, "line": {"color": "rgba(169, 88, 62, 0.25)", "width": 0.8}},
             customdata=focus[["early_share", "recent_share", "recent_papers"]],
             hovertemplate=(
                 "%{y}<br>"
@@ -53,6 +53,6 @@ def make_topic_momentum(papers: pd.DataFrame) -> go.Figure:
             ),
         )
     )
-    fig.add_vline(x=0, line={"color": "#c78a9e", "width": 1})
+    fig.add_vline(x=0, line={"color": "#e6dfd8", "width": 1.5})
     fig.update_layout(title="Topic momentum · recent vs early share", xaxis_title="Change in share, percentage points", yaxis_title="")
     return apply_research_layout(fig, height=430, legend=False)

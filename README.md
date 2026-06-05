@@ -4,14 +4,27 @@ Local Tier 1 MVP for COMP4010 Project 2. The app explores accepted NeurIPS paper
 
 This repository intentionally excludes shinyapps.io deployment, the report, and slides for the local MVP pass.
 
+## Task Allocation
+
+| Member | Responsibilities |
+|--------|-----------------|
+| Pham Dinh Hieu | Pipeline architecture, data scraping & enrichment (OpenAlex, OpenReview, PDF), topic modeling, ML forecast, Shiny app structure |
+| Nguyen Tien Dat | Chart modules (geography, heatmap, network, streamgraph), cross-filtering interactivity, Shiny reactive patterns |
+| Nguyen Nhat Minh | Creative visual lab (galaxy, river, race, bloom, orbit, weather, universe, DNA), CSS theming, visual design |
+| Hoang Duc Minh | Data quality, tests, documentation, coverage & provenance panels |
+
 ## Setup
 
+**Python version: 3.11** (recommended via `pyenv` or `conda`).
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-pipeline.txt
-pip install -r requirements-app.txt
+python3.11 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements-pipeline.txt   # full pipeline + tests
+pip install -r requirements-app.txt        # app only (lighter)
 ```
+
+Dependencies are fully pinned in both requirements files for reproducibility.
 
 ## Quick Local Demo
 
@@ -95,4 +108,4 @@ The Shiny app reads only compact app-ready files:
 - `data/processed/coverage.parquet`
 - `data/processed/affiliation_source_year.parquet`
 
-The pipeline also writes `reports/coverage.csv` for completeness and metadata coverage.
+The pipeline also writes `reports/coverage.csv` for completeness and metadata coverage, and `reports/forecast_backtest.csv` with per-topic Holt-Winters back-test MAPE scores.
