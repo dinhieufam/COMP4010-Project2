@@ -228,9 +228,9 @@ data/interim/pdf_cache/
 data/interim/pdf_text_cache/
 data/interim/*_http_cache*
 data/http_cache*
-reports/*.csv
+audits/*.csv
 !data/raw/.gitkeep
 !data/interim/.gitkeep
 !data/processed/.gitkeep
-!reports/.gitkeep
-!reports/coverage.csv
+!audits/.gitkeep
+!audits/coverage.csv

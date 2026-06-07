@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pipeline.config import PROCESSED_DIR, RAW_DIR, REPORTS_DIR, ensure_dirs
+from pipeline.config import AUDITS_DIR, PROCESSED_DIR, RAW_DIR, ensure_dirs
 from pipeline.io import write_jsonl
 
 
@@ -187,4 +187,4 @@ def write_sample_processed(processed_dir: Path = PROCESSED_DIR) -> None:
     processed_dir.mkdir(parents=True, exist_ok=True)
     for name, frame in frames.items():
         frame.to_parquet(processed_dir / f"{name}.parquet", index=False)
-    frames["coverage"].to_csv(REPORTS_DIR / "coverage.csv", index=False)
+    frames["coverage"].to_csv(AUDITS_DIR / "coverage.csv", index=False)

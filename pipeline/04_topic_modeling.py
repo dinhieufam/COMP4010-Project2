@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pipeline.config import INTERIM_DIR, MANUAL_DIR, REPORTS_DIR, TOPIC_TAXONOMY_PATH, ensure_dirs
+from pipeline.config import AUDITS_DIR, INTERIM_DIR, MANUAL_DIR, TOPIC_TAXONOMY_PATH, ensure_dirs
 from pipeline.io import write_parquet
 
 
@@ -288,8 +288,8 @@ def write_topic_audit(papers: pd.DataFrame, taxonomy_labels: list[str]) -> None:
                 "review_examples": " | ".join(review_examples),
             }
         )
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(rows).to_csv(REPORTS_DIR / "topic_audit.csv", index=False)
+    AUDITS_DIR.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_csv(AUDITS_DIR / "topic_audit.csv", index=False)
 
 
 def main() -> None:

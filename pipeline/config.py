@@ -9,7 +9,7 @@ RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 PROCESSED_DIR = DATA_DIR / "processed"
 MANUAL_DIR = DATA_DIR / "manual"
-REPORTS_DIR = PROJECT_ROOT / "reports"
+AUDITS_DIR = PROJECT_ROOT / "audits"
 CACHE_DIR = DATA_DIR / "http_cache"
 TOPIC_TAXONOMY_PATH = PROJECT_ROOT / "pipeline" / "topic_taxonomy.json"
 
@@ -19,5 +19,5 @@ DEFAULT_MAILTO = "research-observatory@example.com"
 
 
 def ensure_dirs() -> None:
-    for path in (RAW_DIR, INTERIM_DIR, PROCESSED_DIR, MANUAL_DIR, REPORTS_DIR, CACHE_DIR):
+    for path in (RAW_DIR, INTERIM_DIR, PROCESSED_DIR, MANUAL_DIR, AUDITS_DIR, CACHE_DIR):
         path.mkdir(parents=True, exist_ok=True)

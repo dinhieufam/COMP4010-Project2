@@ -83,7 +83,7 @@ and their documentation live in `data/manual/`.
 |   `-- processed/          # Compact datasets consumed by the dashboard
 |-- pipeline/               # Numbered data-processing stages and shared utilities
 |-- report/                 # Generated report figures
-|-- reports/                # Data-quality and audit outputs
+|-- audits/                 # Data-quality and pipeline audit outputs
 |-- tests/                  # Automated test suite
 |-- requirements-app.txt    # Dashboard dependencies
 `-- requirements-pipeline.txt
@@ -129,7 +129,7 @@ python pipeline/07_aggregate_for_app.py
 ```
 
 The pipeline writes final application datasets to `data/processed/` and audit
-outputs to `reports/`.
+outputs to `audits/`.
 
 ## Tests
 

@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pipeline.config import INTERIM_DIR, PROCESSED_DIR, RAW_DIR, REPORTS_DIR, ensure_dirs
+from pipeline.config import AUDITS_DIR, INTERIM_DIR, PROCESSED_DIR, RAW_DIR, ensure_dirs
 from pipeline.io import write_parquet
 
 
@@ -194,8 +194,8 @@ def main() -> None:
     }
     for name, frame in outputs.items():
         write_parquet(frame, PROCESSED_DIR / f"{name}.parquet")
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    coverage.to_csv(REPORTS_DIR / "coverage.csv", index=False)
+    AUDITS_DIR.mkdir(parents=True, exist_ok=True)
+    coverage.to_csv(AUDITS_DIR / "coverage.csv", index=False)
     print(f"Wrote processed app data to {Path(PROCESSED_DIR).relative_to(PROCESSED_DIR.parents[1])}.")
 
 
