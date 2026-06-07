@@ -941,3 +941,1332 @@ h1, h2, h3, h4 {
   white-space: nowrap;
   font-family: var(--font-body);
 }
+
+/* ══════════════════════════════════════════════════════
+   STORY MODE
+   ══════════════════════════════════════════════════════ */
+
+/* ── Mode switcher pill nav (① Story / ② Explore) ────── */
+
+/* .mode-switcher-wrap is full-page height (wraps all tab content + nav pills),
+   so sticky must be on the nav pills element itself, not the wrapper. */
+.mode-switcher-wrap {
+  background: var(--canvas);
+}
+
+.mode-switcher-wrap .nav.nav-pills {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  gap: 4px;
+  padding: 10px 40px;
+  margin: 0;
+  justify-content: flex-start;
+}
+
+.mode-switcher-wrap .nav-link {
+  padding: 7px 22px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: 999px;
+  transition: all 0.15s;
+  background: transparent;
+  letter-spacing: 0.01em;
+}
+
+.mode-switcher-wrap .nav-link.active {
+  color: var(--on-primary);
+  background: var(--primary);
+}
+
+.mode-switcher-wrap .nav-link:hover:not(.active) {
+  color: var(--ink);
+  background: var(--surface-card);
+}
+
+/* ── Story scroll container ──────────────────────────── */
+
+.story-scroll {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px 120px;
+  scroll-snap-type: y proximity;
+}
+
+/* ── Shared fade-up animation ────────────────────────── */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Landing hero (dark full-viewport) ───────────────── */
+
+.landing-hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--surface-dark);
+  padding: 80px 40px;
+  margin: 0 -40px;
+}
+
+.landing-tagline {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--on-dark-soft);
+  opacity: 0.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.landing-counter {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 8vw, 120px);
+  font-weight: 400;
+  color: var(--primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 36px;
+  animation: fadeUp 1.2s ease-out forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+.landing-thesis {
+  max-width: 600px;
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.4vw, 20px);
+  color: var(--on-dark-soft);
+  line-height: 1.65;
+  margin-bottom: 52px;
+  animation: fadeUp 1.2s ease-out forwards;
+  animation-delay: 0.8s;
+  opacity: 0;
+}
+
+/* ── Standard chapter (Option A — stacked scroll) ────── */
+
+.chapter {
+  min-height: 92vh;
+  scroll-snap-align: start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 40px;
+  align-items: center;
+  padding: 64px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.chapter-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chapter-number {
+  font-family: var(--font-display);
+  font-size: 72px;
+  color: var(--primary);
+  opacity: 0.25;
+  line-height: 1;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+.chapter-claim {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(28px, 3vw, 48px);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 1.12;
+  margin: 0;
+}
+
+.chapter-body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--body);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 480px;
+}
+
+.takeaway {
+  margin-top: 8px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--primary);
+  background: var(--accent-soft);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--body-strong);
+  line-height: 1.55;
+  border-radius: 0 8px 8px 0;
+}
+
+.scroll-cue {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--muted-soft);
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.chapter-visual {
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Dark act-break band ─────────────────────────────── */
+
+.act-break {
+  min-height: 30vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--surface-dark);
+  padding: 64px 40px;
+  margin: 0 -40px;
+  scroll-snap-align: start;
+}
+
+.act-break-stat {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5vw, 72px);
+  color: var(--primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.act-break-caption {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--on-dark-soft);
+  opacity: 0.7;
+  margin: 0;
+}
+
+.act-break-bridge {
+  margin-top: 28px;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 1.6vw, 22px);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--on-dark-soft);
+  opacity: 0.85;
+  letter-spacing: -0.01em;
+  max-width: 560px;
+  line-height: 1.5;
+}
+
+/* ── Scrollytelling chapters (Option B — sticky graphic) */
+
+.scrolly-chapter {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+  border-top: 1px solid var(--hairline);
+  padding-top: 64px;
+}
+
+.scrolly-sticky {
+  position: sticky;
+  top: 56px;                     /* height of the mode-switcher bar */
+  height: calc(100vh - 56px);
+  display: flex;
+  align-items: center;
+  padding-right: 32px;
+}
+
+.scrolly-steps {
+  padding: 0 0 60vh 32px;        /* 60vh bottom padding so last step can reach threshold */
+  border-left: 1px solid var(--hairline);
+}
+
+.scrolly-step {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 0;
+  /* opacity / transition handled by the fade-in rules above */
+}
+
+/* Last step doesn't need full 60vh — closes gap to the takeaway box */
+.scrolly-step-last {
+  min-height: 28vh;
+  padding-bottom: 0;
+}
+
+.scrolly-step-number {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.scrolly-step h3 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.2vw, 34px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+
+.scrolly-step p {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--body);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 360px;
+}
+
+/* ── Finale CTA section ──────────────────────────────── */
+
+.finale-section {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 40px;
+  border-top: 1px solid var(--hairline);
+  scroll-snap-align: start;
+}
+
+.finale-claim {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.5vw, 52px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  max-width: 700px;
+  margin-bottom: 20px;
+  line-height: 1.1;
+}
+
+.finale-sub {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 560px;
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+
+.finale-sub-small {
+  font-size: 14px;
+  opacity: 0.65;
+  margin-bottom: 32px;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 14px 36px;
+  background: var(--primary);
+  color: var(--on-primary) !important;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.cta-button:hover,
+.cta-button:focus {
+  background: var(--primary-active);
+  color: var(--on-primary) !important;
+}
+
+/* ── Section fade-in / fade-out on scroll ────────────────────────────────── */
+
+.chapter,
+.act-break,
+.finale-section {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+
+.chapter.in-view,
+.act-break.in-view,
+.finale-section.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scrolly chapters: fade the prose column; sticky chart is always visible */
+.scrolly-chapter {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.scrolly-chapter.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scrolly steps: dim when not in view, dim-active when in view but not focused,
+   full opacity when is-active */
+.scrolly-step {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.scrolly-step.in-view {
+  opacity: 0.32;
+  transform: translateY(0);
+}
+
+.scrolly-step.is-active {
+  opacity: 1 !important;
+  transform: translateY(0);
+}
+
+/* ── Multi-chart scrolly: one chart per step, CSS opacity switching ─────── */
+
+.scrolly-charts-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Inactive charts overlay the active one without affecting layout */
+.scrolly-chart {
+  width: 100%;
+  transition: opacity 0.25s ease;
+}
+
+.scrolly-chart:not(.is-active) {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.scrolly-chart.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  position: relative;
+}
+
+/* Chapter header inside the scrolly-steps column */
+.scrolly-chapter-header {
+  padding: 24px 32px 36px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 4px;
+}
+
+.scrolly-chapter-header .chapter-number {
+  font-family: var(--font-display);
+  font-size: 56px;
+  color: var(--primary);
+  opacity: 0.22;
+  line-height: 1;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+.scrolly-chapter-header .chapter-claim {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(22px, 2.4vw, 38px);
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  line-height: 1.14;
+  margin: 0;
+}
+
+/* ── Story responsive ────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .story-scroll {
+    padding: 0 20px 80px;
+  }
+
+  .chapter {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 24px;
+  }
+
+  .scrolly-chapter {
+    grid-template-columns: 1fr;
+  }
+
+  .scrolly-sticky {
+    position: static;
+    height: auto;
+    padding-right: 0;
+  }
+
+  .scrolly-steps {
+    border-left: none;
+    padding-left: 0;
+    padding-bottom: 20px;
+  }
+
+  .landing-hero,
+  .act-break {
+    margin: 0 -20px;
+  }
+
+  .mode-switcher-wrap .nav.nav-pills {
+    padding: 8px 16px;
+  }
+}
+
+/* ── Explore: standalone panel row (no grid) ─────────── */
+
+.explore-section > .panel {
+  margin-bottom: 16px;
+  grid-column: unset;   /* cancel dashboard-grid span */
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════
+   EXPLORE MODE — redesigned layout
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Shell (replaces .app-shell sidebar layout) ──────── */
+
+.explore-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+/* Shiny's Bootstrap adds margin-top: 20px to every .tab-pane via
+   --bslib-navbar-margin. Zero it out so the filter bar sticky offset
+   (top: 42px) matches the actual pixel distance from the viewport top. */
+.tab-pane {
+  margin-top: 0 !important;
+}
+
+/* ── Sticky filter bar ───────────────────────────────── */
+
+.explore-filter-bar {
+  position: sticky;
+  top: 42px;
+  z-index: 80;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 40px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: 0 1px 4px rgba(20,20,19,0.06);
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.filter-item-slider { min-width: 200px; max-width: 260px; }
+.filter-item-select { min-width: 160px; max-width: 220px; }
+.filter-item-reset  { align-self: flex-end; }
+
+.explore-filter-bar label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.explore-filter-bar .form-group { margin-bottom: 0; }
+
+.explore-filter-bar .selectize-input,
+.explore-filter-bar .form-control {
+  min-height: 34px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+.explore-filter-bar .selectize-input.focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(204,120,92,0.15);
+  outline: none;
+}
+
+.explore-filter-bar .reset-button {
+  width: auto;
+  min-width: 88px;
+  min-height: 34px;
+  padding: 0 14px;
+  margin-top: 0;
+  font-size: 12px;
+}
+
+.filter-status-text {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  align-self: center;
+  white-space: nowrap;
+  padding-bottom: 4px;
+}
+
+/* ── Explore content area ────────────────────────────── */
+
+.explore-content {
+  flex: 1;
+  padding: 0 40px 60px;
+  max-width: 1680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.explore-content .nav-underline {
+  position: sticky;
+  top: 116px;           /* fallback; race_controls.js overrides with exact measured value */
+  z-index: 70;
+  /* Break out of explore-content's 40px side padding so the tab bar
+     spans the same full width as the filter bar above it. */
+  width: calc(100% + 80px);
+  margin-left: -40px;
+  margin-right: -40px;
+  padding-left: 40px;
+  padding-right: 40px;
+  box-sizing: border-box;
+  background: var(--canvas);
+  padding-top: 0;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 0;
+}
+
+/* Extra breathing room so first panel is never hidden under sticky nav */
+.explore-section {
+  scroll-margin-top: 180px;
+}
+
+.explore-section {
+  padding: 24px 0 8px;
+}
+
+/* ── KPI grid (4-column, replaces 6-column) ──────────── */
+
+.kpi-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* ── Overview charts grid ────────────────────────────── */
+
+.overview-charts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.overview-col-left { display: flex; flex-direction: column; }
+.overview-col-right { display: flex; flex-direction: column; gap: 16px; }
+
+.overview-tall-panel.panel { min-height: 480px; }
+.overview-col-right .panel { flex: 1; min-height: 220px; }
+
+/* ── Insight card ────────────────────────────────────── */
+
+.insight-card {
+  padding: 20px 24px;
+  background: var(--surface-dark);
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.insight-card-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--on-dark);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.insight-line {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--on-dark-soft);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.insight-line:last-child { margin-bottom: 0; }
+
+/* ── Topics tab ──────────────────────────────────────── */
+
+.topic-selector-bar {
+  max-width: 420px;
+  margin-bottom: 20px;
+}
+
+.topic-selector-bar .form-group { margin-bottom: 0; }
+
+.topic-profile-header {
+  padding: 20px 24px;
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.topic-profile-name {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 36px);
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  margin-bottom: 16px;
+}
+
+.topic-stats-row {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.topic-stat { display: flex; flex-direction: column; gap: 4px; }
+
+.topic-stat .shiny-text-output {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 1.8vw, 28px);
+  color: var(--primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.topic-stat-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.topics-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Geography tab extras ────────────────────────────── */
+
+.geo-lower-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Institutions tab ────────────────────────────────── */
+
+.inst-upper-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Ask the Data tab ────────────────────────────────── */
+
+.ask-section-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.4vw, 40px);
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.ask-section-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.question-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.question-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.question-btn {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 16px;
+  text-align: left;
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 2px solid var(--hairline);
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.question-btn:hover {
+  border-color: var(--primary);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.question-btn:active,
+.question-btn:focus {
+  border-color: var(--primary);
+  background: var(--accent-soft);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(204,120,92,0.15);
+}
+
+.question-btn-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  padding: 0 4px;
+  line-height: 1.4;
+}
+
+.answer-area {
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 24px;
+  min-height: 80px;
+}
+
+.answer-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2vw, 32px);
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.ask-placeholder {
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.answer-insight-text {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+  border-left: 3px solid var(--primary);
+  padding-left: 14px;
+  background: var(--accent-soft);
+  padding: 12px 14px;
+  border-radius: 0 8px 8px 0;
+}
+
+/* ── Country / Institution Profile section ───────────── */
+
+.profile-section {
+  margin-bottom: 16px;
+}
+
+.profile-section > .panel {
+  margin-bottom: 16px;
+  grid-column: unset;
+  width: 100%;
+}
+
+.profile-section-label {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 1.8vw, 26px);
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.profile-prompt {
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 12px 0;
+  margin: 0 0 4px;
+}
+
+/* ── Institutional Comparison section ────────────────── */
+
+.comparison-section {
+  margin-bottom: 16px;
+}
+
+.comparison-section > .panel {
+  margin-top: 12px;
+  grid-column: unset;
+  width: 100%;
+}
+
+.comparison-selectors {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+  padding: 16px 0 4px;
+}
+
+.comparison-selectors .form-group { margin-bottom: 0; min-width: 220px; flex: 1 1 220px; }
+
+.comparison-selectors label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.comparison-selectors .selectize-input {
+  min-height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+}
+
+/* ── Papers tab ──────────────────────────────────────── */
+
+.papers-section {
+  padding: 24px 0 60px;
+}
+
+.papers-search-bar {
+  margin-bottom: 20px;
+}
+
+.papers-search-bar .shiny-input-container { margin-bottom: 0; }
+
+.papers-search-bar input[type="text"] {
+  width: 100%;
+  max-width: 560px;
+  font-size: 15px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--hairline);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  transition: border-color 0.15s;
+}
+
+.papers-search-bar input[type="text"]:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(204,120,92,0.12);
+}
+
+.pcards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 920px;
+}
+
+.pcard {
+  padding: 18px 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pcard:hover {
+  border-color: var(--border-pink);
+  box-shadow: 0 2px 8px rgba(204,120,92,0.08);
+}
+
+.pcard-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pcard-year {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.pcard-topic {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-active);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pcard-title {
+  font-family: var(--font-display);
+  font-size: clamp(15px, 1.3vw, 18px);
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.pcard-authors {
+  font-size: 13px;
+  color: var(--body);
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+
+.pcard-inst {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.pcard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.pcard-country {
+  font-size: 12px;
+  color: var(--muted-soft);
+}
+
+.pcard-links { display: flex; gap: 8px; }
+
+.pcard-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-primary);
+  background: var(--primary);
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.pcard-link:hover { background: var(--primary-active); color: var(--on-primary); }
+
+.pcard-link-sec {
+  color: var(--primary-active);
+  background: var(--accent-soft);
+  border: 1px solid var(--border-pink);
+}
+
+.pcard-link-sec:hover { background: var(--surface-card); color: var(--primary-active); }
+
+.explorer-status {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+/* ── Responsive for Explore ──────────────────────────── */
+
+@media (max-width: 1100px) {
+  .question-cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .explore-filter-bar  { padding: 10px 20px; top: 42px; }
+  .explore-content     { padding: 0 20px 40px; }
+  /* Re-sync negative margins to match the smaller 20px padding */
+  .explore-content .nav-underline {
+    width: calc(100% + 40px);
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .kpi-grid-4          { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .question-cards-grid { grid-template-columns: 1fr; }
+  .comparison-selectors { gap: 12px; }
+}
+
+/* ── Geography tab local country selector ───────────── */
+
+.geo-country-selector {
+  padding: 20px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 340px;
+}
+
+.geo-country-selector .profile-section-label {
+  margin-bottom: 4px;
+}
+
+.geo-country-selector .shiny-input-container {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.geo-country-selector label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.geo-country-selector .selectize-input {
+  min-height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+.geo-country-selector .selectize-input.focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(204,120,92,0.12);
+  outline: none;
+}
+
+/* ── Bar-chart race controls ─────────────────────────── */
+
+.race-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0 4px;
+}
+
+.race-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 22px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.race-play-btn:hover  { background: var(--primary-active); }
+.race-play-btn:active { background: var(--primary-active); }
+
+.race-year-badge {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  min-width: 52px;
+  line-height: 1;
+}
+
+.race-slider {
+  display: block;
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 2px 0 10px;
+  height: 4px;
+}
+
+/* Insight card bullets */
+.insight-bullet {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.insight-bullet::before {
+  content: "•";
+  color: var(--primary);
+  font-size: 18px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.insight-bullet .insight-line { margin: 0; }
+
+/* ── Selectize dropdown panel ───────────────────────────────────────────
+   The base .selectize-input boxes are already styled above (canvas bg,
+   hairline border, coral focus ring, Inter font). These rules complete the
+   picture by theming the dropdown panel, option items, and selected tags.  */
+
+.selectize-dropdown {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(20, 20, 19, 0.10), 0 1px 4px rgba(20, 20, 19, 0.06);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--body);
+  margin-top: 2px;
+  overflow: hidden;
+  z-index: 300;
+}
+
+.selectize-dropdown-content {
+  padding: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+
+.selectize-dropdown .option {
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--body);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  line-height: 1.4;
+}
+
+.selectize-dropdown .option:hover,
+.selectize-dropdown .option.active {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.selectize-dropdown .option.selected {
+  background: var(--accent-soft);
+  color: var(--primary-active);
+  font-weight: 500;
+}
+
+.selectize-dropdown .option.active.selected {
+  background: var(--surface-cream-strong);
+  color: var(--primary-active);
+}
+
+.selectize-dropdown .optgroup-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  cursor: default;
+  padding: 10px 10px 4px;
+  border-radius: 0;
+}
+
+/* Selected item tags (multi-select / tag mode) */
+.selectize-input .item {
+  background: var(--accent-soft);
+  border: 1px solid var(--border-pink);
+  border-radius: 4px;
+  color: var(--primary-active);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 1px 6px;
+  margin: 1px 2px 1px 0;
+  line-height: 1.5;
+}
+
+/* Caret arrow on single-select */
+.selectize-control.single .selectize-input::after {
+  border-color: var(--muted) transparent transparent;
+  border-width: 5px 4px 0;
+  margin-top: -2px;
+}
+
+.selectize-control.single .selectize-input.dropdown-active::after {
+  border-color: transparent transparent var(--muted);
+  border-width: 0 4px 5px;
+  margin-top: -5px;
+}
+
+/* Placeholder text */
+.selectize-input input::placeholder,
+.selectize-input.has-items input::placeholder {
+  color: var(--muted-soft);
+  font-family: var(--font-body);
+}
+
+/* Plugin: remove button × on tags */
+.selectize-input .item .remove {
+  color: var(--muted);
+  border-left: 1px solid var(--border-pink);
+  padding-left: 4px;
+  margin-left: 4px;
+}
+.selectize-input .item .remove:hover {
+  color: var(--primary-active);
+}

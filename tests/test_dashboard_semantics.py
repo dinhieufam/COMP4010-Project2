@@ -32,13 +32,13 @@ def test_country_counts_use_participation_semantics():
 
 
 def test_exploded_participations_can_exceed_unique_papers_by_design():
-    papers = pd.DataFrame({"paper_id": ["p1", "p2"], "institutions_text": ["A, B, C", "D"]})
+    papers = pd.DataFrame({"paper_id": ["p1", "p2"], "institutions_text": ["A | B | C", "D"]})
     exploded = explode_tokens(papers, "institutions_text", "institution")
     assert len(exploded) == 4
     assert exploded["paper_id"].nunique() == 2
 
 
-def test_topic_network_filters_edge_candidates_before_top_selection():
+def test_topic_network_filters_edges_to_visible_topics():
     papers = pd.DataFrame(
         {
             "paper_id": ["p1", "p2"],
@@ -54,8 +54,12 @@ def test_topic_network_filters_edge_candidates_before_top_selection():
     )
     fig = make_topic_network(papers, edges)
     assert isinstance(fig, go.Figure)
-    edge_traces = [trace for trace in fig.data if getattr(trace, "mode", "") == "lines"]
-    assert len(edge_traces) == 1
+    assert len(fig.data) == 1
+    heatmap = fig.data[0]
+    assert heatmap.type == "heatmap"
+    values = {float(value) for row in heatmap.z for value in row}
+    assert 0.3 in values
+    assert 99.0 not in values
 
 
 def test_topic_race_ranks_are_computed_per_year():

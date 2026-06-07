@@ -10,7 +10,7 @@ from app.charts.streamgraph import make_topic_growth
 from app.charts.coverage import make_coverage_strip
 from app.charts.collaboration import make_collaboration_flow
 from app.charts.creative import (
-    make_institution_country_orbit,
+    make_institution_country_treemap,
     make_metadata_weather,
     make_paper_universe,
     make_research_bloom,
@@ -43,7 +43,7 @@ def test_chart_builders_return_plotly_figures():
     assert isinstance(make_research_river(papers), go.Figure)
     assert isinstance(make_topic_race(papers), go.Figure)
     assert isinstance(make_research_bloom(papers), go.Figure)
-    assert isinstance(make_institution_country_orbit(papers), go.Figure)
+    assert isinstance(make_institution_country_treemap(papers), go.Figure)
     assert isinstance(make_metadata_weather(papers), go.Figure)
     assert isinstance(make_paper_universe(papers), go.Figure)
     assert isinstance(make_topic_dna(papers), go.Figure)
@@ -65,7 +65,7 @@ def test_chart_builders_handle_empty_filters():
     assert isinstance(make_research_river(papers), go.Figure)
     assert isinstance(make_topic_race(papers), go.Figure)
     assert isinstance(make_research_bloom(papers), go.Figure)
-    assert isinstance(make_institution_country_orbit(papers), go.Figure)
+    assert isinstance(make_institution_country_treemap(papers), go.Figure)
     assert isinstance(make_metadata_weather(papers), go.Figure)
     assert isinstance(make_paper_universe(papers), go.Figure)
     assert isinstance(make_topic_dna(papers), go.Figure)

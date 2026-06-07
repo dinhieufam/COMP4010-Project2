@@ -1,0 +1,8 @@
+shiny==1.6.1
+shinywidgets==0.8.1
+plotly==6.5.0
+pandas==2.2.3
+pyarrow==21.0.0
+numpy==2.2.5
+scikit-learn==1.7.2
+networkx==3.5

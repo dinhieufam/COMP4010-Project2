@@ -17,10 +17,10 @@ def focus_topics(papers: pd.DataFrame, max_topics: int = 8) -> pd.DataFrame:
     return data
 
 
-def make_topic_growth(papers: pd.DataFrame, forecast: pd.DataFrame | None = None) -> go.Figure:
+def make_topic_growth(papers: pd.DataFrame, forecast: pd.DataFrame | None = None, max_topics: int = 8) -> go.Figure:
     if papers.empty:
         return empty_figure("Topic growth over time", height=520)
-    papers = focus_topics(papers)
+    papers = focus_topics(papers, max_topics=max_topics)
     data = (
         papers.groupby(["year", "topic_label"], as_index=False)
         .agg(paper_count=("paper_id", "count"))

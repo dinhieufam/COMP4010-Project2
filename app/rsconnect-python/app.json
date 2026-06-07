@@ -1,0 +1,12 @@
+{
+    "https://api.shinyapps.io": {
+        "server_url": "https://api.shinyapps.io",
+        "filename": "/Users/dinhieufam/DINHHIEU/VINUNI/Spring 26/COMP4010 - Data Visualization/Project/Project 2/COMP4010-Project2/app",
+        "app_url": "https://dinhieufam.shinyapps.io/neurips-research-trend/",
+        "app_id": "17475322",
+        "app_guid": null,
+        "title": "neurips-research-trend",
+        "app_mode": "python-shiny",
+        "app_store_version": 1
+    }
+}

@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 
 from .theme import CORAL_SCALE, apply_research_layout, empty_figure
 
+_CORAL = "#cc785c"
+
 
 def make_topic_network(papers: pd.DataFrame, edges: pd.DataFrame) -> go.Figure:
     """Topic similarity matrix — colour-encoded adjacency heatmap.
@@ -74,3 +76,57 @@ def make_topic_network(papers: pd.DataFrame, edges: pd.DataFrame) -> go.Figure:
         margin={"l": 160, "r": 20, "t": 52, "b": 120},
     )
     return apply_research_layout(fig, height=500, legend=False)
+
+
+def make_topic_connections_ranked(
+    papers: pd.DataFrame,
+    edges: pd.DataFrame,
+    selected_topic: str | None,
+) -> go.Figure:
+    """Ranked bar chart: other topics by co-occurrence strength with the selected topic.
+
+    Shows which topics appear most alongside `selected_topic` in the same papers,
+    ranked by edge weight descending. Click a bar to cross-filter to that topic.
+    """
+    if papers.empty or not selected_topic:
+        return empty_figure("Topic Connections", "Select a topic above to see its connections.")
+
+    if edges is None or edges.empty:
+        return empty_figure("Topic Connections", "No co-occurrence data available.")
+
+    mask = (
+        edges["source_topic_label"].eq(selected_topic)
+        | edges["target_topic_label"].eq(selected_topic)
+    )
+    relevant = edges[mask].copy()
+
+    if relevant.empty:
+        return empty_figure("Topic Connections", f"No co-occurrence data for '{selected_topic}'.")
+
+    relevant["other_topic"] = relevant.apply(
+        lambda r: r["target_topic_label"]
+        if r["source_topic_label"] == selected_topic
+        else r["source_topic_label"],
+        axis=1,
+    )
+
+    result = (
+        relevant[["other_topic", "weight"]]
+        .sort_values("weight", ascending=True)
+    )
+
+    fig = go.Figure(
+        go.Bar(
+            x=result["weight"].tolist(),
+            y=result["other_topic"].tolist(),
+            orientation="h",
+            marker_color=_CORAL,
+            hovertemplate="%{y}<br>Co-occurrence weight: %{x:.3f}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        title=f"Topics most connected to · {selected_topic}",
+        xaxis_title="Co-occurrence weight",
+        margin={"l": 200, "r": 20, "t": 52, "b": 40},
+    )
+    return apply_research_layout(fig, height=420, legend=False)
